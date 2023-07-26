@@ -1,0 +1,286 @@
+import re
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+
+def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, subplot_spacing=0.05, share_x="all",
+                 share_y="all"):
+    """ Prepare Plotly subplot object
+
+    Prepared a Plotly Figure object with predefined subplots information:
+        - column grid: 2 if length `sub_var` is superior to 1 (1 if not)
+        - row grid: length of `sub_var` divided by 2 (+1 for odd number) or 1 if length of `sub_var` is lesser than 3
+
+    :parameter sub_var: List of value associated with the variable used to create the subplot (for example: list of
+        scenario value associated with the column `scenario_id`)
+    :type sub_var: list
+    :parameter sub_title: Title(s) for each subplot, should be of same length as `sub_var`. `None` for no titles.
+    :type sub_title: list
+    :parameter x_title: Title of the x-axis
+    :type x_title: str
+    :parameter y_title: Title of the y-axis
+    :type y_title: str
+    :parameter sort: Boolean to indicate if the `sub_var` should be sorted alphabetically, by default `True`
+    :type sort: bool
+    :parameter font_size:  Font size of the subplots annotation, by default `14`
+    :type font_size: int
+    :parameter subplot_spacing: Space between subplot rows and columns, must be a float between 0 and 1; by default
+        `0.05`
+    :type subplot_spacing: int
+    :parameter share_x: Share x-axis in-between subplots. See `plotly.subplots.make_subplots()` for more information;
+        by default `"all"`
+    :type share_x: bool | str
+    :parameter share_y: Share y-axis in-between subplots. See `plotly.subplots.make_subplots()` for more information;
+        by default `"all"`
+    :type share_y: bool | str
+    :return: a Plotly subplots object; `plotly.graph_objs.Figure` with predefined subplots configured in 'layout
+    """
+    # Sort value
+    if sort is True:
+        sub_var.sort()
+    # Row and Columns information
+    if len(sub_var) > 2:
+        col_num = 2
+        if len(sub_var) % 2 == 0:
+            row_num = len(sub_var) / 2
+        else:
+            row_num = (len(sub_var) + 1) / 2
+    else:
+        row_num = 1
+        col_num = len(sub_var)
+    # Subplots
+    fig = make_subplots(rows=int(row_num), cols=int(col_num), subplot_titles=sub_title, shared_yaxes=share_y,
+                        shared_xaxes=share_x, vertical_spacing=subplot_spacing, horizontal_spacing=subplot_spacing,
+                        x_title=x_title, y_title=y_title)
+    fig.update_annotations(font_size=font_size)
+    return fig
+
+
+def subplot_row_col(sub_var, var):
+    """ Returns row and column information
+
+    For a subplots Figure, returns the associated row and column information for a specific value for an object
+    created with `prep_subplot()` function and containing less than 7 plots in the subplot object.
+
+    :parameter sub_var: List of value associated with the variable used to create the subplot (for example: list of
+        scenario value associated with the column `scenario_id`
+    :type sub_var: list
+    :parameter var: A specific value from the `sub_var` list
+    :type var: str | float | int
+    :return: a list with 2 values: [row number, column number] in the subplots
+    """
+    scen_order_dict = dict(zip(sub_var, list(range(len(sub_var)))))
+    if scen_order_dict[var] < 2:
+        n_row = 1
+    elif scen_order_dict[var] < 4:
+        n_row = 2
+    else:
+        n_row = 3
+    if scen_order_dict[var] % 2 == 0:
+        n_col = 1
+    else:
+        n_col = 2
+    return [n_row, n_col]
+
+
+def subplot_fig_output(fig, title, subtitle="", height=1000, theme="plotly_white"):
+    """ Update Figure Layout
+
+    For a Figure object, update the layout to include:
+        - x and y axes with mirrored black line of width 1
+        - a title with `title` + `subtitle` text, font 18, in a center position
+        - a plot with: height (by default 1000), theme `plotly_white` (default) and a horizontal legend with grouped
+        trace, at the bottom of the plot
+
+    :parameter fig: a Figure object to update
+    :type fig: plotly.graph_objs.Figure
+    :parameter title: Title of the plot
+    :type title: str
+    :parameter subtitle: Subtitle to add to the title, by default `""`
+    :type subtitle: str
+    :parameter height: Height of the output plot, by default `1000`px
+    :type height: int
+    :parameter theme: Plotly theme, by default `plotly_white`
+    :type theme:
+    :return: a plotly.graph_objs.Figure object with updated layout properties
+    """
+    fig.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+    fig.update_layout(
+        title=dict(text=title + subtitle, font=dict(size=18), xanchor="center", xref="paper", x=0.5),
+        height=height, template=theme, legend=dict(orientation="h", yanchor="top", xanchor="left", traceorder="grouped")
+    )
+    return fig
+
+
+def ui_ribbons(df_plot, fig, quant_sel, legend_name, color=None,  opacity=0.1, subplot_coord=None, hover_text="",
+               line_width=0, rm_second_hover=False, show_legend=False):
+    """ Add Intervals (ribbons) on Figure
+
+    Add intervals information on Figure object. By default, the hover text will be:
+
+    ```
+        "{quant_sel[1] - quant_sel[0] * 100} % Intervals {value} - {value}"
+
+        "Epiweek: {target_end_date}"
+    ```
+
+    :parameter df_plot: a DataFrame containing multiple columns: `type_id`: containing the quantiles value associated
+        with the `quant_sel` parameter; `target_end_date`: date (x-axis) and `value`: value (y-axis)
+    :type df_plot:  pandas.DataFrame
+    :parameter fig: a Figure object to update
+    :type fig: plotly.graph_objs.Figure
+    :parameter quant_sel: list of at least 2 quantiles values to draw the interval
+        (only the first 2 values will be used)
+    :type quant_sel: list
+    :parameter legend_name: Legend name of the associated trace (used also as legend group name)
+    :type legend_name: str
+    :parameter color: Color of the trace to add in a "rgba(X, Y, Z, 1)" format, if `None` (default) will use blue:
+        "rgba(0, 0, 255, 1)"
+    :type color: str
+    :parameter opacity: Opacity level of the intervals (ribbons); by default `0.1`
+    :type opacity: float
+    :parameter subplot_coord: For subplots, a list with 2 values: [row number, column number] indicating on which
+        subplots to add the trace. `None` for non subplots object (default)
+    :type subplot_coord: list | str
+    :parameter hover_text: Appending text appearing on hover; by default, `""`
+    :type hover_text: str
+    :parameter line_width: Width of the lines on the border of the intervals, by default `0`
+    :type line_width: float | int
+    :parameter rm_second_hover: Boolean to remove hover associated with the second `quant_sel` value; by default
+        `FALSE`
+    :type rm_second_hover: bool
+    :parameter show_legend: Boolean to show the legend; by default `FALSE`
+    :type show_legend: bool
+    :return: a plotly.graph_objs.Figure object with an added trace displaying intervals
+    """
+    # Prerequisite
+    if subplot_coord is None:
+        subplot_coord = [None, None]
+    if color is None:
+        color = "rgba(0, 0, 255, 1)"
+    # Hover text
+    second_hover_text = "<extra></extra>"
+    if rm_second_hover is False:
+        second_hover_text = hover_text + str(round((quant_sel[1] - quant_sel[0]) * 100)) + \
+                            " % Interval: %{customdata:,.2f} - %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
+    # Intervals
+    fig.add_trace(go.Scatter(x=df_plot[df_plot["type_id"] == quant_sel[1]]["target_end_date"],
+                             y=df_plot[df_plot["type_id"] == quant_sel[1]]["value"],
+                             customdata=df_plot[df_plot["type_id"] == quant_sel[0]]["value"],
+                             name=legend_name,
+                             mode='lines',
+                             line=dict(width=line_width),
+                             marker=dict(color=re.sub(", 1\)", ", " + str(opacity) + ")", color)),
+                             legendgroup=legend_name,
+                             showlegend=show_legend,
+                             hovertemplate=second_hover_text),
+                  row=subplot_coord[0], col=subplot_coord[1])
+    fig.add_trace(
+        go.Scatter(x=df_plot[df_plot["type_id"] == quant_sel[0]]["target_end_date"],
+                   y=df_plot[df_plot["type_id"] == quant_sel[0]]["value"],
+                   customdata=df_plot[df_plot["type_id"] == quant_sel[1]]["value"],
+                   name=legend_name,
+                   line=dict(width=line_width),
+                   mode='lines',
+                   marker=dict(color=re.sub(", 1\)", ", " + str(opacity) + ")", color)),
+                   legendgroup=legend_name,
+                   showlegend=False,
+                   fillcolor=re.sub(", 1\)", ", " + str(opacity) + ")", color),
+                   fill='tonexty',
+                   hovertemplate=hover_text + str(round((quant_sel[1] - quant_sel[0]) * 100)) +
+                        " % Interval: %{y:,.2f} - %{customdata:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"),
+        row=subplot_coord[0], col=subplot_coord[1])
+    return fig
+
+
+def make_blank_slider(x=0, y=-0.2, prefix="Date: ", font_color="gray", font_size=16, duration=300):
+    """ Create the base for a slider
+
+    Create a dictionary containing the "blank" base for a slider with:
+        - "active" equal to 0
+        - x and y location being set to 0 (default, x left), -0.2 (default, y top)
+        - current value: with as prefix "Date: " (default); xanchor on the right and with a gray font size 16 (default)
+        - transition: duration of 300 (default) and easing "cubic-in-out"
+        - steps: empty list
+
+    :parameter x: coordinates x of the slider location on the plot; by default `0`
+    :type x: int | float
+    :parameter y: coordinates y of the slider location on the plot; by default `-0.2`
+    :type y: int | float
+    :parameter prefix : Prefix to append to the selected value on the slider; by default `Date: `
+    :type prefix: str
+    :parameter font_color: Color of the selected value font; by default `gray`
+    :type font_color: str
+    :parameter font_size: Size of the selected value font; by default `gray`
+    :type font_size: int
+    :parameter duration: Slider duration transition; by default `300`
+    :type duration: int
+    :return: a dictionary with "blank" slider information
+    """
+    sliders_dict = {
+        "active": 0,
+        "x": x, "xanchor": "left", "y": y, "yanchor": "top",
+        "currentvalue": {
+            "prefix": prefix,
+            "xanchor": "right",
+            "font": {"size": font_size, "color": font_color}},
+        "transition": {"duration": duration, "easing": "cubic-in-out"},
+        "steps": []
+    }
+    return sliders_dict
+
+
+def make_slider_buttons(x=-0.1, y=-0.25, redraw=False, duration=300):
+    """ Create the base for a slider "Play/Pause" button
+
+    Create a dictionary containing the basic information for a "play/pause" button to associate with a slider, with:
+        - x and y location being set to -0.1 (default, x left), -0.25 (default, y bottom)
+        - [play]
+            - transition: duration of 300 (default) and easing "quadratic-in-out"
+            - frame: duration 0f 200 (duration - 100)
+
+    :parameter x: coordinates x of the slider location on the plot; by default `-0.1`
+    :type x: int | float
+    :parameter y: coordinates y of the slider location on the plot; by default `-0.25`
+    :type y: int | float
+    :parameter redraw: Boolean, button redraw associated information, by default `False`
+    :parameter redraw: bool
+    :parameter duration: Slider duration transition; by default `300`
+    :type duration: int
+    :return: a dictionary with "play/pause" button information to associate with a slider
+    """
+    button = [
+        {'buttons': [{'args': [None, {'frame': {'duration': duration - 100, 'redraw': redraw}, 'fromcurrent': True,
+                                      'transition': {'duration': duration, 'easing': 'quadratic-in-out'}}],
+                      'method': 'animate', 'label': 'Play'},
+                     {'args': [[None], {'frame': {'duration': 0, 'redraw': redraw}, 'mode': 'immediate',
+                                        'transition': {'duration': 0}}],
+                      'label': 'Pause', 'method': 'animate'}],
+         "type": "buttons", "showactive": False,
+         "x": x, "xanchor": "left", "y": -y, "yanchor": "bottom"
+         }]
+    return button
+
+
+def fig_error_message(text, height=500):
+    """ Empty Figure with Error text
+
+    Create an empty figure with an annotation text in the middle
+
+    :parameter text: Text to display
+    :type text: str
+    :parameter height: Height of the output plot, by default `500` px
+    :type height: int
+    :return: an empty `plotly.graph_objs.Figure` with only a text displayed
+    """
+    fig = go.Figure()
+    fig.update_yaxes(visible=False)
+    fig.update_xaxes(visible=False)
+    fig.update_layout(annotations=[{
+        "text": text,
+        "xref": "paper",
+        "yshift": 90,
+        "showarrow": False
+    }], template="plotly_white", height=height)
+    return fig
