@@ -268,6 +268,54 @@ def make_slider_buttons(x=-0.1, y=-0.25, redraw=False, duration=300):
     return button
 
 
+def make_ens_button(fig_plot, viz_truth_data=True, truth_legend_name="Truth Data", ensemble_name=None,
+                    button_name="Ensemble", button_opt="all"):
+    """ Ensemble button
+
+    Create a button (called "Ensemble" by default), allowing to display only one trace of interest (`ensemble_name`),
+    with the possibility to display truth data also (viz_truth_data, truth_legend_name). It is also possible to
+    add a second "All" button, displaying all the traces in the plot.
+
+    :parameter fig_plot:  a Figure object to update
+    :type fig_plot: plotly.graph_objs.Figure
+    :parameter: viz_truth_data: To view (`True`, default) or not (`False`) the truth_data
+    :type viz_truth_data: bool
+    :parameter truth_legend_name: Legend name of the associated trace, by default
+        "Truth Data"
+    :type truth_legend_name: str
+    :parameter ensemble_name: A trace name value to display by default and when button `"Ensemble"` (default name) is
+        clicked.
+    :type ensemble_name: str
+    :parameter button_name: Label name of the default button, by default "Ensemble"
+    :type button_name: str
+    :parameter button_opt: if "all", will add an "All" button, displaying all traces
+    :type button_opt: str
+    :return: a dictionary containing the button information to display only the "ensemble" (or all traces)
+    """
+    to_vis = list()
+    vis_list = list()
+    if viz_truth_data is True:
+        to_vis.append(truth_legend_name)
+    to_vis.append(ensemble_name)
+    for i in fig_plot:
+        if i["name"] in to_vis:
+            vis_list.append(True)
+        else:
+            vis_list.append("legendonly")
+    button = list([
+        dict(label=button_name,
+             method="update",
+             args=[{"visible": vis_list}])
+    ])
+    if button_opt == "all":
+        button = button + list([
+            dict(label='All',
+                 method='update',
+                 args=[{'visible': [True]}])
+        ])
+    return button
+
+
 def fig_error_message(text, height=500):
     """ Empty Figure with Error text
 
@@ -289,3 +337,32 @@ def fig_error_message(text, height=500):
         "showarrow": False
     }], template="plotly_white", height=height)
     return fig
+
+
+def color_line_trace(color_dict, mod_name, ensemble_name=None, ensemble_color=None, line_width=2):
+    """ Returns the line and color for a particular key
+
+    Returns the line and color for a particular key: if the ensemble name is equivalent to mod_name then
+    `ensemble_color` will be used instead of `color_dict` for color and the line_width will be doubled.
+
+    :parameter color_dict: a dictionary with keys and associated color in the format
+        "rgba(X, Y, Z, 1)" (value)
+    :type color_dict: dict
+    :parameter mod_name: one of the key of `color_dict`
+    :type mod_name: str
+    :parameter ensemble_name: A`legend_col` value, if not `None, will be used to change the width (double) and the
+        color (associated `ensemble_color` parameter) of the associated trace
+    :type ensemble_name: str
+    :parameter ensemble_color: Color name, if not `None`, will be used as color for the `legend_col` value associated
+        with the parameter `ensemble_name`
+    :type ensemble_color: str
+    :param line_width: Width of the line, by default `2`
+    :type line_width: float | int
+    :return: a list with [color, line_width] information
+    """
+    if ensemble_name is not None and ensemble_color is not None and mod_name == ensemble_name:
+        color = ensemble_color
+        line_width = line_width * 2
+    else:
+        color = color_dict[mod_name]
+    return [color, line_width]
