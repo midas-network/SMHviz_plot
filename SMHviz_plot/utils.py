@@ -113,8 +113,9 @@ def subplot_fig_output(fig, title, subtitle="", height=1000, theme="plotly_white
     return fig
 
 
-def ui_ribbons(df_plot, fig, quant_sel, legend_name, color=None,  opacity=0.1, subplot_coord=None, hover_text="",
-               line_width=0, rm_second_hover=False, show_legend=False):
+def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_col="value", color=None,
+               opacity=0.1, subplot_coord=None, hover_text="", line_width=0, rm_second_hover=False,
+               show_legend=False):
     """ Add Intervals (ribbons) on Figure
 
     Add intervals information on Figure object. By default, the hover text will be:
@@ -125,21 +126,25 @@ def ui_ribbons(df_plot, fig, quant_sel, legend_name, color=None,  opacity=0.1, s
         "Epiweek: {target_end_date}"
     ```
 
+    :parameter fig: a Figure object to update
+    :type fig: plotly.graph_objs.Figure
     :parameter df_plot: a DataFrame containing multiple columns: `type_id`: containing the quantiles value associated
         with the `quant_sel` parameter; `target_end_date`: date (x-axis) and `value`: value (y-axis)
     :type df_plot:  pandas.DataFrame
-    :parameter fig: a Figure object to update
-    :type fig: plotly.graph_objs.Figure
     :parameter quant_sel: list of at least 2 quantiles values to draw the interval
         (only the first 2 values will be used)
     :type quant_sel: list
     :parameter legend_name: Legend name of the associated trace (used also as legend group name)
     :type legend_name: str
+    :parameter x_col: Name of the column to use for x-axis, by default `target_end_date`
+    :type x_col: str
+    :parameter y_col: Name of the column to use for y-axis, by default `value`
+    :type y_col: str
     :parameter color: Color of the trace to add in a "rgba(X, Y, Z, 1)" format, if `None` (default) will use blue:
         "rgba(0, 0, 255, 1)"
     :type color: str
     :parameter opacity: Opacity level of the intervals (ribbons); by default `0.1`
-    :type opacity: float
+    :type opacity: float | int
     :parameter subplot_coord: For subplots, a list with 2 values: [row number, column number] indicating on which
         subplots to add the trace. `None` for non subplots object (default)
     :type subplot_coord: list | str
@@ -150,7 +155,7 @@ def ui_ribbons(df_plot, fig, quant_sel, legend_name, color=None,  opacity=0.1, s
     :parameter rm_second_hover: Boolean to remove hover associated with the second `quant_sel` value; by default
         `FALSE`
     :type rm_second_hover: bool
-    :parameter show_legend: Boolean to show the legend; by default `FALSE`
+    :parameter show_legend: Boolean to show the legend; by default `False`
     :type show_legend: bool
     :return: a plotly.graph_objs.Figure object with an added trace displaying intervals
     """
@@ -165,9 +170,9 @@ def ui_ribbons(df_plot, fig, quant_sel, legend_name, color=None,  opacity=0.1, s
         second_hover_text = hover_text + str(round((quant_sel[1] - quant_sel[0]) * 100)) + \
                             " % Interval: %{customdata:,.2f} - %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
     # Intervals
-    fig.add_trace(go.Scatter(x=df_plot[df_plot["type_id"] == quant_sel[1]]["target_end_date"],
-                             y=df_plot[df_plot["type_id"] == quant_sel[1]]["value"],
-                             customdata=df_plot[df_plot["type_id"] == quant_sel[0]]["value"],
+    fig.add_trace(go.Scatter(x=df_plot[df_plot["type_id"] == quant_sel[1]][x_col],
+                             y=df_plot[df_plot["type_id"] == quant_sel[1]][y_col],
+                             customdata=df_plot[df_plot["type_id"] == quant_sel[0]][y_col],
                              name=legend_name,
                              mode='lines',
                              line=dict(width=line_width),
@@ -177,9 +182,9 @@ def ui_ribbons(df_plot, fig, quant_sel, legend_name, color=None,  opacity=0.1, s
                              hovertemplate=second_hover_text),
                   row=subplot_coord[0], col=subplot_coord[1])
     fig.add_trace(
-        go.Scatter(x=df_plot[df_plot["type_id"] == quant_sel[0]]["target_end_date"],
-                   y=df_plot[df_plot["type_id"] == quant_sel[0]]["value"],
-                   customdata=df_plot[df_plot["type_id"] == quant_sel[1]]["value"],
+        go.Scatter(x=df_plot[df_plot["type_id"] == quant_sel[0]][x_col],
+                   y=df_plot[df_plot["type_id"] == quant_sel[0]][y_col],
+                   customdata=df_plot[df_plot["type_id"] == quant_sel[1]][y_col],
                    name=legend_name,
                    line=dict(width=line_width),
                    mode='lines',
