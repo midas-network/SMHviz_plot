@@ -8,7 +8,7 @@ plots.
 To install the package locally:
 
     clone this repository
-    `pip install .`
+    pip install .
 
 To install the package from GitHub.com
 
