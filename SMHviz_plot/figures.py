@@ -124,7 +124,7 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
     if legend_dict is not None:
         full_model_name = legend_dict[str(proj_data[legend_col].unique())]
     else:
-        full_model_name = str(proj_data[legend_col].unique())
+        full_model_name = "".join(list(proj_data["model_id"].unique()))
     # Order time value
     df_trace = proj_data.sort_values(x_col)
     # Figure add trace
@@ -323,19 +323,24 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         fig_plot.update_layout(xaxis_title=x_title, yaxis_title=y_title)
     # Colorscale
     if color_dict is None:
-        palette_list = px.colors.sample_colorscale(palette, len(proj_data[legend_col].unique()))
-        for i in range(0, len(palette_list)):
-            palette_list[i] = re.sub("\)", ", 1)", re.sub("rgb", "rgba", palette_list[i]))
-        color_dict = dict(zip(proj_data[legend_col].unique(), palette_list))
+        if len(proj_data[legend_col].unique()) > 1:
+            palette_list = px.colors.sample_colorscale(palette, len(proj_data[legend_col].unique()))
+            for i in range(0, len(palette_list)):
+                palette_list[i] = re.sub("\)", ", 1)", re.sub("rgb", "rgba", palette_list[i]))
+            color_dict = dict(zip(proj_data[legend_col].unique(), palette_list))
+        else:
+            color_dict = dict(zip(proj_data[legend_col].unique(), "rgba(0, 0, 255, 1)"))
     # Intervals
     if intervals_dict is None:
         intervals_dict = {0.95: [0.025, 0.975], 0.9: [0.05, 0.95], 0.8: [0.1, 0.9], 0.5: [0.25, 0.75]}
+    if intervals is None:
+        intervals = [0.95, 0.9, 0.8, 0.5]
     # Plot
     # Figure with subplots
     in_legend = list()
     if sub_var is not None:
         for var in sub_var:
-            df_facet = proj_data[proj_data[subplot_var] == var].drop(subplot_var, axis=1)
+            df_facet = proj_data[proj_data[subplot_var] == var]
             subplot_coord = subplot_row_col(sub_var, var)
             if var == sub_var[0]:
                 show_legend = True
@@ -346,8 +351,10 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                                              hover_text=truth_legend_name, subplot_coord=subplot_coord,
                                              x_col=x_truth_col, y_col=y_truth_col, width=line_width,
                                              connect_gaps=connect_gaps)
-            for mod_name in df_facet[legend_col].unique().sort():
-                df_facet_trace = df_facet[df_facet[legend_col] == mod_name].drop(legend_col, axis=1)
+            list_mod = list(df_facet[legend_col].unique())
+            list_mod.sort()
+            for mod_name in list_mod:
+                df_facet_trace = df_facet[df_facet[legend_col] == mod_name]
                 col_line = color_line_trace(color_dict, mod_name, ensemble_name=ensemble_name,
                                             ensemble_color=ensemble_color, line_width=line_width)
                 if (mod_name not in in_legend) and (len(df_facet_trace) > 0):
@@ -356,7 +363,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                 else:
                     show_legend = False
                 # Figure add trace
-                fig_plot = make_proj_plot(fig_plot, proj_data, intervals=intervals, intervals_dict=intervals_dict,
+                fig_plot = make_proj_plot(fig_plot, df_facet_trace, intervals=intervals, intervals_dict=intervals_dict,
                                           x_col=x_col, y_col=y_col, legend_col=legend_col, legend_dict=legend_dict,
                                           line_width=col_line[1], color=col_line[0], show_legend=show_legend,
                                           point_value=point_value, opacity=opacity, connect_gaps=connect_gaps,
@@ -368,8 +375,10 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
             fig_plot = add_scatter_trace(fig_plot, truth_data, truth_legend_name, hover_text=truth_legend_name,
                                          x_col=x_truth_col, y_col=y_truth_col, width=line_width,
                                          connect_gaps=connect_gaps)
-        for mod_name in proj_data[legend_col].unique().sort():
-            df_trace = proj_data[proj_data[legend_col] == mod_name].drop(legend_col, axis=1)
+        list_mod = list(proj_data[legend_col].unique())
+        list_mod.sort()
+        for mod_name in list_mod:
+            df_trace = proj_data[proj_data[legend_col] == mod_name]
             col_line = color_line_trace(color_dict, mod_name, ensemble_name=ensemble_name,
                                         ensemble_color=ensemble_color, line_width=line_width)
             # Figure add trace
@@ -387,10 +396,10 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         leg_only.append(truth_legend_name)
     if ensemble_view is True:
         to_vis.append(ensemble_name)
-        leg_only.append(proj_data[legend_col].unique())
+        leg_only = leg_only + list(proj_data[legend_col].unique())
         leg_only.remove(ensemble_name)
     else:
-        to_vis.append(proj_data[legend_col].unique())
+        to_vis = to_vis + list(proj_data[legend_col].unique())
     for i in fig_plot.data:
         if i["name"] in to_vis:
             i["visible"] = True
