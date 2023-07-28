@@ -13,9 +13,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "dash>=2.7.0",
     "datetime",
     "numpy>=1.23.5",
     "pandas>=1.5.2",
     "plotly>=5.9.0"
 ]
+
+[tool.setuptools.packages.find]
+exclude = ["docs*", "data*"]
