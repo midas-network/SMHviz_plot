@@ -159,8 +159,8 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
 
 def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None,
                       x_col="target_end_date", y_col="value", point_value="median", legend_col="model_name",
-                      x_title="Horizon", y_title="N", subplot_var=None, subplot_title=None,
-                      truth_legend_name="Truth Data", legend_dict=None, x_truth_col="time_value",
+                      x_title="Horizon", y_title="N", subplot_var=None, subplot_title=None, share_x="all",
+                      share_y="all", truth_legend_name="Truth Data", legend_dict=None, x_truth_col="time_value",
                       y_truth_col="value", viz_truth_data=True, hover_text="",
                       ensemble_name=None, ensemble_color=None, ensemble_view=False, line_width=2, connect_gaps=True,
                       color_dict=None, opacity=0.1, palette="turbo", title="", subtitle="", height=1000,
@@ -229,6 +229,12 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     :type subplot_var: str
     :parameter subplot_title: Title(s) for each subplot. `None` for no titles.
     :type subplot_title: list | str
+    :parameter share_x: Share x-axis in-between subplots. See `plotly.subplots.make_subplots()` for more information;
+        by default `"all"`
+    :type share_x: bool | str
+    :parameter share_y: Share y-axis in-between subplots. See `plotly.subplots.make_subplots()` for more information;
+        by default `"all"`
+    :type share_y: bool | str
     :parameter truth_legend_name: Legend name of the associated trace (used also as legend group name), by default
         "Truth Data"
     :type truth_legend_name: str
@@ -300,7 +306,8 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     # Figure preparation
     if subplot_var is not None:
         sub_var = proj_data[subplot_var].unique()
-        fig_plot = prep_subplot(sub_var, subplot_title, x_title, y_title)
+        fig_plot = prep_subplot(sub_var, subplot_title, x_title, y_title, share_y=share_y, share_x=share_x,
+                                sort=False)
     else:
         sub_var = None
         fig_plot = go.Figure()
