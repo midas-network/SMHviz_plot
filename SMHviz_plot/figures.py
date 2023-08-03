@@ -1,4 +1,3 @@
-import numpy as np
 import plotly.express as px
 from SMHviz_plot.utils import *
 
@@ -64,7 +63,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
 
 def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_col="target_end_date", y_col="value",
                    legend_col="model_name", legend_dict=None, line_width=2, color="rgba(0, 0, 255, 1)",
-                   show_legend=True, point_value="median", opacity=None, connect_gaps=True, subplot_coord=None,
+                   show_legend=True, point_value="median", opacity=0.1, connect_gaps=True, subplot_coord=None,
                    hover_text=""):
     """ Plot projection data on an existing Figure
 
@@ -134,20 +133,6 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
         plot_df = df_trace[df_trace["type_id"] == 0.5]
     else:
         plot_df = None
-    # Opacity
-    if intervals is not None and opacity is not None:
-        if len(opacity) >= len(intervals):
-            opacity.sort()
-        else:
-            val_opacity = opacity + [0.1, 0.1*len(intervals)]
-            opacity = list(np.linspace(min(val_opacity), max(val_opacity), len(intervals)))
-            opacity.sort()
-    elif intervals is not None and opacity is None:
-        val_opacity = [0.1, 0.1 * len(intervals)]
-        opacity = list(np.linspace(min(val_opacity), max(val_opacity), len(intervals)))
-        opacity.sort()
-    else:
-        opacity = [0.1]
     # Plot
     # Lines
     if plot_df is not None:
@@ -160,14 +145,14 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
         if len(intervals) == 1:
             quant_intervals = intervals_dict[intervals]
             fig_plot = ui_ribbons(fig_plot, df_trace, quant_intervals, full_model_name, x_col=x_col, y_col=y_col,
-                                  color=color, opacity=opacity[0], subplot_coord=subplot_coord,
+                                  color=color, opacity=opacity, subplot_coord=subplot_coord,
                                   hover_text=hover_text)
         elif len(intervals) > 1:
             intervals.sort(reverse=True)
             for i in range(0, len(intervals)):
                 quant_intervals = intervals_dict[intervals[i]]
                 fig_plot = ui_ribbons(fig_plot, df_trace, quant_intervals, full_model_name, x_col=x_col,
-                                      y_col=y_col, color=color, opacity=opacity[i],
+                                      y_col=y_col, color=color, opacity=opacity,
                                       subplot_coord=subplot_coord, hover_text=hover_text)
     return fig_plot
 
@@ -178,7 +163,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                       truth_legend_name="Truth Data", legend_dict=None, x_truth_col="time_value",
                       y_truth_col="value", viz_truth_data=True, hover_text="",
                       ensemble_name=None, ensemble_color=None, ensemble_view=False, line_width=2, connect_gaps=True,
-                      color_dict=None, opacity=None, palette="turbo", title="", subtitle="", height=1000,
+                      color_dict=None, opacity=0.1, palette="turbo", title="", subtitle="", height=1000,
                       theme="plotly_white", notes=None, button=True, button_opt="all", v_lines=None, h_lines=None,
                       zoom_in_projection=None):
     """Create a Scatter Plot
@@ -277,8 +262,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         "rgba(X, Y, Z, 1)" (value), if `None` (default) it will be created by using `palette`from
         plotly.express.colors scale.
     :type color_dict: dict
-    :parameter opacity: Opacity level of the intervals (ribbons); by default `None`, will generate opacity for each
-        `intervals` value starting at 0.1 with a step of 0.1.
+    :parameter opacity: Opacity level of the intervals (ribbons); by default `0.1`.
     :type opacity: list
     :parameter palette: Name of the palette to create `color_dict` if `color_dict` is set to `None`. By default,
         "turbo". Value accepted should come from plotly.express.colors scale.
