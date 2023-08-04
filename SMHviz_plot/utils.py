@@ -297,7 +297,7 @@ def make_ens_button(fig_plot, viz_truth_data=True, truth_legend_name="Truth Data
     if viz_truth_data is True:
         to_vis.append(truth_legend_name)
     to_vis.append(ensemble_name)
-    for i in fig_plot:
+    for i in fig_plot.data:
         if i["name"] in to_vis:
             vis_list.append(True)
         else:

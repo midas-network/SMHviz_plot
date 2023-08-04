@@ -123,7 +123,7 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
     if legend_dict is not None:
         full_model_name = legend_dict[str(proj_data[legend_col].unique())]
     else:
-        full_model_name = "".join(list(proj_data["model_id"].unique()))
+        full_model_name = "".join(list(proj_data[legend_col].unique()))
     # Order time value
     df_trace = proj_data.sort_values(x_col)
     # Figure add trace
@@ -142,7 +142,7 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
                                      hover_text=hover_text)
     # Intervals
     if intervals is not None:
-        if len(intervals) == 1:
+        if isinstance(intervals, float | int):
             quant_intervals = intervals_dict[intervals]
             fig_plot = ui_ribbons(fig_plot, df_trace, quant_intervals, full_model_name, x_col=x_col, y_col=y_col,
                                   color=color, opacity=opacity, subplot_coord=subplot_coord,
