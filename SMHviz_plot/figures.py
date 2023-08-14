@@ -55,7 +55,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
                              line=dict(width=width),
                              showlegend=show_legend,
                              hovertemplate=hover_text +
-                             "<br>Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"),
+                             "Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"),
                   row=subplot_coord[0], col=subplot_coord[1])
     fig.update_traces(connectgaps=connect_gaps)
     return fig
@@ -150,9 +150,13 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
         elif len(intervals) > 1:
             intervals.sort(reverse=True)
             for i in range(0, len(intervals)):
+                if i is 0 and plot_df is None:
+                    ui_show_legend = show_legend
+                else:
+                    ui_show_legend = False
                 quant_intervals = intervals_dict[intervals[i]]
                 fig_plot = ui_ribbons(fig_plot, df_trace, quant_intervals, full_model_name, x_col=x_col,
-                                      y_col=y_col, color=color, opacity=opacity,
+                                      y_col=y_col, color=color, opacity=opacity, show_legend=ui_show_legend,
                                       subplot_coord=subplot_coord, hover_text=hover_text)
     return fig_plot
 
