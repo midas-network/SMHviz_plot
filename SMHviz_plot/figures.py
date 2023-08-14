@@ -74,7 +74,7 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
     :parameter proj_data: a DataFrame containing the `x_col` and `y_col` columns
     :type proj_data: pandas.DataFrame
     :parameter intervals: List of intervals to plot, by default `None`. If `None` ,it will be set to all possible
-        values: `[0.95, 0.9, 0.8, 0.5]`
+        values: `[0.95, 0.9, 0.8, 0.5]`, please use an empty list for no intervals: `[]`
     :type intervals: list
     :parameter intervals_dict: Dictionary to translate `intervals` value into associated quantiles value, if "None"
         (default), will use internal dictionary:
@@ -134,6 +134,10 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
     else:
         plot_df = None
     # Plot
+    if len(re.findall("%{.+?}", hover_text)) > 0:
+        hover_value = proj_data[re.sub("%{|}", "", re.findall("%{.+?}", hover_text)[0])].unique()
+        hover_value = list(hover_value)[0]
+        hover_text = re.sub("%{.+?}", hover_value, hover_text)
     # Lines
     if plot_df is not None:
         fig_plot = add_scatter_trace(fig_plot, plot_df, full_model_name, x_col=x_col, y_col=y_col,
