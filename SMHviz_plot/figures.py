@@ -302,7 +302,8 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         "line_color": <line color>, "line_dash": <line dash format>}}`, by default `None`
     :type v_lines: dict
     :parameter h_lines: Dictionary containing the description of one or possible multiple red dashed horizontal line
-        on the plot, should be structured as: `h_lines = {"<name>":{"x": <value>, "text": <associated text>}}`;
+        on the plot, should be structured as:
+        h_lines = {"<name>":{"value": <value>, "text": <associated text>, "color": <associated color>}}`;
         by default `None`
     :type h_lines: dict
     :parameter zoom_in_projection: Dictionary containing `x_min`, `x_max`, `y_min` and `y_max` value, to used as
@@ -426,8 +427,8 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     if h_lines is not None:
         for h_name in h_lines:
             h_info = h_lines[h_name]
-            fig_plot.add_hline(y=h_info["value"], line_width=1, line_color="red",
-                               line_dash="dash", annotation=dict(font_size=10, font_color="red"),
+            fig_plot.add_hline(y=h_info["value"], line_width=1, line_color=h_info["color"],
+                               line_dash="dash", annotation=dict(font_size=10, font_color=h_info["color"]),
                                annotation_position="bottom left",
                                annotation_text=h_info["text"])
     # Update layout
