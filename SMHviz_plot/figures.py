@@ -61,6 +61,72 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     return fig
 
 
+def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y_col_min="min", width=5,
+                  mode="lines", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
+                  hover_text=""):
+    """ Add scatter trace to a Figure
+
+    Add scatter trace on Figure object. By default, the hover text will be:
+
+    ```
+        "Value: {value}"
+
+        "Epiweek: {time_value}"
+    ```
+
+    For more information on the parameters, please consult the plotly.graph_objects.Scatter() documentation
+
+    :parameter fig: a Figure object to update
+    :type fig: plotly.graph_objs.Figure
+    :parameter data: a DataFrame containing the `x_col` and `y_col` columns
+    :type data: pandas.DataFrame
+    :parameter legend_name: Legend name of the associated trace (used also as legend group name)
+    :type legend_name: str
+    :parameter x_col: Name of the column to use for x-axis, by default `time_value`
+    :type x_col: str
+    :parameter y_col_max: Name of the column to use for y-axis, max value, by default `max`
+    :type y_col_max: str
+    :parameter y_col_min: Name of the column to use for y-axis, min value , by default `min`
+    :type y_col_min: str
+    :parameter width: Width of the line, by default `5`
+    :type width: float | int
+    :parameter mode: Drawing mode of this scatter trace, by default "lines+markers"
+    :type mode: str
+    :parameter color: Color of the trace to add, by default "rgb(110, 110, 110)"
+    :type color: str
+    :parameter show_legend: Boolean to show the legend; by default `True`
+    :type show_legend: bool
+    :parameter subplot_coord: For subplots, a list with 2 values: [row number, column number] indicating on which
+        subplots to add the trace. `None` for non subplots object (default)
+    :type subplot_coord: list | str
+    :parameter hover_text: Appending text appearing on hover; by default, `""`
+    :type hover_text: str
+    :return: a plotly.graph_objs.Figure object with an added trace
+    """
+    if subplot_coord is None:
+        subplot_coord = [None, None]
+    for x_date in data[x_col].unique():
+        if x_date == data[x_col].unique()[0]:
+            show_leg = show_legend
+        else:
+            show_leg = False
+        plot_data = data[data[x_col] == x_date]
+        fig.add_trace(go.Scatter(x=[x_date, x_date],
+                                 y=[plot_data[y_col_min][0], plot_data[y_col_max][0]],
+                                 name=legend_name,
+                                 mode=mode,
+                                 legendgroup=legend_name,
+                                 line=dict(width=width, color=color),
+                                 showlegend=show_leg,
+                                 hovertemplate=hover_text +
+                                 "95% Interval: " + str(plot_data[y_col_min][0]) + " - " +
+                                 str(plot_data[y_col_max][0]) + "<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
+                                 ),
+                      row=subplot_coord[0], col=subplot_coord[1])
+    fig.update_traces(connectgaps=False)
+    return fig
+
+
 def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_col="target_end_date", y_col="value",
                    legend_col="model_name", legend_dict=None, line_width=2, color="rgba(0, 0, 255, 1)",
                    show_legend=True, point_value="median", opacity=0.1, connect_gaps=True, subplot_coord=None,
@@ -169,7 +235,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                       x_col="target_end_date", y_col="value", point_value="median", legend_col="model_name",
                       x_title="Horizon", y_title="N", subplot_var=None, subplot_title=None, share_x="all",
                       share_y="all", truth_legend_name="Truth Data", legend_dict=None, x_truth_col="time_value",
-                      y_truth_col="value", viz_truth_data=True, hover_text="",
+                      y_truth_col="value", viz_truth_data=True, truth_data_type="scatter", hover_text="",
                       ensemble_name=None, ensemble_color=None, ensemble_view=False, line_width=2, connect_gaps=True,
                       color_dict=None, opacity=0.1, palette="turbo", title="", subtitle="", height=1000,
                       theme="plotly_white", notes=None, button=True, button_opt="all", v_lines=None, h_lines=None,
@@ -257,6 +323,8 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     :parameter: viz_truth_data: To view (`True`, default) or not (`False`) or in legend only (`"legendonly"`) the
         truth data
     :type viz_truth_data: bool | str
+    :parameter truth_data_type: Type of plot for truth data: "scatter" or "bar" (vertical bar)
+    :type truth_data_type: str
     :parameter hover_text: Appending text appearing on hover; by default, `""`
     :type hover_text: str
     :parameter ensemble_name: A`legend_col` value, if not `None, will be used to change the width (double) and the
@@ -347,10 +415,17 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
             else:
                 show_legend = False
             if truth_data is not None:
-                fig_plot = add_scatter_trace(fig_plot, truth_data, truth_legend_name, show_legend=show_legend,
-                                             hover_text=truth_legend_name, subplot_coord=subplot_coord,
-                                             x_col=x_truth_col, y_col=y_truth_col, width=line_width,
-                                             connect_gaps=connect_gaps)
+                if truth_data_type is "scatter":
+                    fig_plot = add_scatter_trace(fig_plot, truth_data, truth_legend_name, show_legend=show_legend,
+                                                 hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
+                                                 x_col=x_truth_col, y_col=y_truth_col, width=line_width,
+                                                 connect_gaps=connect_gaps)
+                elif truth_data_type is "bar":
+                    fig_plot = add_bar_trace(fig_plot, truth_data, truth_legend_name, show_legend=show_legend,
+                                             hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
+                                             x_col=x_truth_col)
+                else:
+                    fig_plot = fig_plot
             list_mod = list(df_facet[legend_col].unique())
             list_mod.sort()
             for mod_name in list_mod:
@@ -372,9 +447,16 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     else:
         fig_plot = fig_plot
         if truth_data is not None:
-            fig_plot = add_scatter_trace(fig_plot, truth_data, truth_legend_name, hover_text=truth_legend_name,
-                                         x_col=x_truth_col, y_col=y_truth_col, width=line_width,
-                                         connect_gaps=connect_gaps)
+            if truth_data_type is "scatter":
+                fig_plot = add_scatter_trace(fig_plot, truth_data, truth_legend_name,
+                                             hover_text=truth_legend_name + "<br>", x_col=x_truth_col,
+                                             y_col=y_truth_col, width=line_width,
+                                             connect_gaps=connect_gaps)
+            elif truth_data_type is "bar":
+                fig_plot = add_bar_trace(fig_plot, truth_data, truth_legend_name,
+                                         hover_text=truth_legend_name + "<br>", x_col=x_truth_col)
+            else:
+                fig_plot = fig_plot
         list_mod = list(proj_data[legend_col].unique())
         list_mod.sort()
         for mod_name in list_mod:
