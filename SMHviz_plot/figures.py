@@ -61,7 +61,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     return fig
 
 
-def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y_col_min="min", width=5,
+def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y_col_min="min", width=7,
                   mode="lines", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
                   hover_text=""):
     """ Add scatter trace to a Figure
@@ -428,6 +428,9 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                     fig_plot = fig_plot
             list_mod = list(df_facet[legend_col].unique())
             list_mod.sort()
+            if ensemble_name in list_mod:
+                list_mod.remove(ensemble_name)
+                list_mod.append(ensemble_name)
             for mod_name in list_mod:
                 df_facet_trace = df_facet[df_facet[legend_col] == mod_name]
                 col_line = color_line_trace(color_dict, mod_name, ensemble_name=ensemble_name,
@@ -459,6 +462,9 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                 fig_plot = fig_plot
         list_mod = list(proj_data[legend_col].unique())
         list_mod.sort()
+        if ensemble_name in list_mod:
+            list_mod.remove(ensemble_name)
+            list_mod.append(ensemble_name)
         for mod_name in list_mod:
             df_trace = proj_data[proj_data[legend_col] == mod_name]
             col_line = color_line_trace(color_dict, mod_name, ensemble_name=ensemble_name,
