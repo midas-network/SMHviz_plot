@@ -187,11 +187,14 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
         subplot_coord = [None, None]
     # Legend
     if legend_dict is not None:
-        full_model_name = legend_dict[str(proj_data[legend_col].unique())]
+        full_model_name = legend_dict[str(proj_data[legend_col].unique()[0])]
+        proj_data_leg = proj_data.copy()
+        proj_data_leg.loc[:, legend_col] = full_model_name
     else:
         full_model_name = "".join(list(proj_data[legend_col].unique()))
+        proj_data_leg = proj_data.copy()
     # Order time value
-    df_trace = proj_data.sort_values(x_col)
+    df_trace = proj_data_leg.sort_values(x_col)
     # Figure add trace
     if point_value == "point":
         plot_df = df_trace[df_trace["type_id"].isna()]
@@ -201,7 +204,8 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
         plot_df = None
     # Plot
     if len(re.findall("%{.+?}", hover_text)) > 0:
-        hover_value = proj_data[re.sub("%{|}", "", re.findall("%{.+?}", hover_text)[0])].unique()
+        hover_value = proj_data_leg[re.sub("%{|}", "",
+                                           re.findall("%{.+?}", hover_text)[0])].unique()
         hover_value = list(hover_value)[0]
         hover_text = re.sub("%{.+?}", hover_value, hover_text)
     # Lines
@@ -409,19 +413,23 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     if sub_var is not None:
         for var in sub_var:
             df_facet = proj_data[proj_data[subplot_var] == var]
+            if subplot_var in truth_data.columns:
+                truth_facet = truth_data[truth_data[subplot_var] == var]
+            else:
+                truth_facet = truth_data
             subplot_coord = subplot_row_col(sub_var, var)
             if var == sub_var[0]:
                 show_legend = True
             else:
                 show_legend = False
-            if truth_data is not None:
+            if truth_facet is not None:
                 if truth_data_type is "scatter":
-                    fig_plot = add_scatter_trace(fig_plot, truth_data, truth_legend_name, show_legend=show_legend,
+                    fig_plot = add_scatter_trace(fig_plot, truth_facet, truth_legend_name, show_legend=show_legend,
                                                  hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
                                                  x_col=x_truth_col, y_col=y_truth_col, width=line_width,
                                                  connect_gaps=connect_gaps)
                 elif truth_data_type is "bar":
-                    fig_plot = add_bar_trace(fig_plot, truth_data, truth_legend_name, show_legend=show_legend,
+                    fig_plot = add_bar_trace(fig_plot, truth_facet, truth_legend_name, show_legend=show_legend,
                                              hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
                                              x_col=x_truth_col)
                 else:
@@ -487,7 +495,11 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         leg_only = leg_only + list(proj_data[legend_col].unique())
         leg_only.remove(ensemble_name)
     else:
-        to_vis = to_vis + list(proj_data[legend_col].unique())
+        if legend_dict is None:
+            to_vis = to_vis + list(proj_data[legend_col].unique())
+        else:
+            for i in proj_data[legend_col].unique():
+                to_vis.append(legend_dict[str(i)])
     for i in fig_plot.data:
         if i["name"] in to_vis:
             i["visible"] = True
