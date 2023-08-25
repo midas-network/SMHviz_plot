@@ -365,4 +365,5 @@ def color_line_trace(color_dict, mod_name, ensemble_name=None, ensemble_color=No
         line_width = line_width * 2
     else:
         color = color_dict[mod_name]
+        line_width = line_width
     return [color, line_width]
