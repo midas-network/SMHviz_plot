@@ -239,11 +239,11 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                       x_col="target_end_date", y_col="value", point_value="median", legend_col="model_name",
                       x_title="Horizon", y_title="N", subplot_var=None, subplot_title=None, share_x="all",
                       share_y="all", truth_legend_name="Truth Data", legend_dict=None, x_truth_col="time_value",
-                      y_truth_col="value", viz_truth_data=True, truth_data_type="scatter", hover_text="",
-                      ensemble_name=None, ensemble_color=None, ensemble_view=False, line_width=2, connect_gaps=True,
-                      color_dict=None, opacity=0.1, palette="turbo", title="", subtitle="", height=1000,
-                      theme="plotly_white", notes=None, button=True, button_opt="all", v_lines=None, h_lines=None,
-                      zoom_in_projection=None):
+                      y_truth_col="value", viz_truth_data=True, truth_data_type="scatter", truth_mode="lines+markers",
+                      hover_text="", ensemble_name=None, ensemble_color=None, ensemble_view=False, line_width=2,
+                      connect_gaps=True, color_dict=None, opacity=0.1, palette="turbo", title="", subtitle="",
+                      height=1000, theme="plotly_white", notes=None, button=True, button_opt="all", v_lines=None,
+                      h_lines=None, zoom_in_projection=None):
     """Create a Scatter Plot
 
     Create one plot for model projection output files. The function allows multiple view: adding truth data, projection
@@ -329,6 +329,8 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     :type viz_truth_data: bool | str
     :parameter truth_data_type: Type of plot for truth data: "scatter" or "bar" (vertical bar)
     :type truth_data_type: str
+    :parameter truth_mode: Drawing mode of the truth data, only for scatter trace, by default "lines+markers"
+    :type truth_mode: str
     :parameter hover_text: Appending text appearing on hover; by default, `""`
     :type hover_text: str
     :parameter ensemble_name: A`legend_col` value, if not `None, will be used to change the width (double) and the
@@ -427,7 +429,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                     fig_plot = add_scatter_trace(fig_plot, truth_facet, truth_legend_name, show_legend=show_legend,
                                                  hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
                                                  x_col=x_truth_col, y_col=y_truth_col, width=line_width,
-                                                 connect_gaps=connect_gaps)
+                                                 connect_gaps=connect_gaps, mode=truth_mode)
                 elif truth_data_type is "bar":
                     fig_plot = add_bar_trace(fig_plot, truth_facet, truth_legend_name, show_legend=show_legend,
                                              hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
@@ -462,7 +464,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                 fig_plot = add_scatter_trace(fig_plot, truth_data, truth_legend_name,
                                              hover_text=truth_legend_name + "<br>", x_col=x_truth_col,
                                              y_col=y_truth_col, width=line_width,
-                                             connect_gaps=connect_gaps)
+                                             connect_gaps=connect_gaps, mode=truth_mode)
             elif truth_data_type is "bar":
                 fig_plot = add_bar_trace(fig_plot, truth_data, truth_legend_name,
                                          hover_text=truth_legend_name + "<br>", x_col=x_truth_col)
