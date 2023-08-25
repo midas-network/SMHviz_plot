@@ -501,10 +501,13 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     if sub_var is not None:
         for var in sub_var:
             df_facet = proj_data[proj_data[subplot_var] == var]
-            if subplot_var in truth_data.columns:
-                truth_facet = truth_data[truth_data[subplot_var] == var]
+            if truth_data is not None:
+                if subplot_var in truth_data.columns:
+                    truth_facet = truth_data[truth_data[subplot_var] == var]
+                else:
+                    truth_facet = truth_data
             else:
-                truth_facet = truth_data
+                truth_facet = None
             subplot_coord = subplot_row_col(sub_var, var)
             if var == sub_var[0]:
                 show_legend = True
