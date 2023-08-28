@@ -1,4 +1,5 @@
-import plotly.express as px
+import pandas as pd
+
 from SMHviz_plot.utils import *
 
 
@@ -483,13 +484,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         fig_plot.update_layout(xaxis_title=x_title, yaxis_title=y_title)
     # Colorscale
     if color_dict is None:
-        if len(proj_data[legend_col].unique()) > 1:
-            palette_list = px.colors.sample_colorscale(palette, len(proj_data[legend_col].unique()))
-            for i in range(0, len(palette_list)):
-                palette_list[i] = re.sub("\)", ", 1)", re.sub("rgb", "rgba", palette_list[i]))
-            color_dict = dict(zip(proj_data[legend_col].unique(), palette_list))
-        else:
-            color_dict = dict(zip(proj_data[legend_col].unique(), "rgba(0, 0, 255, 1)"))
+        color_dict = make_palette(proj_data, legend_col, palette=palette)
     # Intervals
     if intervals_dict is None:
         intervals_dict = {0.95: [0.025, 0.975], 0.9: [0.05, 0.95], 0.8: [0.1, 0.9], 0.5: [0.25, 0.75]}
@@ -629,3 +624,142 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         fig_plot.update_xaxes(range=[zoom_in_projection["x_min"], zoom_in_projection["x_max"]], autorange=False)
         fig_plot.update_yaxes(range=[zoom_in_projection["y_min"], zoom_in_projection["y_max"]], autorange=False)
     return fig_plot
+
+
+def add_point_scatter(fig, df, ens_name, color_dict, multiply=1, symbol="circle", ens_symbol="diamond-wide",
+                      size=20, opacity=0.7, legend_dict=None, show_legend=True, subplot_col=None, add_zero_line=True,
+                      legend_col="model_name", palette="turbo"):
+    # prerequisite
+    ens_marker = dict(symbol=ens_symbol, size=size, color="rgba(0,0,0," + str(opacity) + ")")
+    multi = multiply
+    if fig is None:
+        fig = go.Figure()
+    if subplot_col is None:
+        subplot_col = 1
+        # Colorscale
+    if color_dict is None:
+        color_dict = make_palette(df, legend_col, palette=palette)
+    # figure
+    df_comp_model = df[df[legend_col] != ens_name]
+    for model in df_comp_model[legend_col].drop_duplicates():
+        df_model = df_comp_model[df_comp_model[legend_col] == model]
+        if legend_dict is not None:
+            full_model_name = legend_dict[model]
+        else:
+            full_model_name = "".join(list(model))
+        # prerequisite
+        color_marker = color_line_trace(color_dict, model, line_width=0)
+        color_marker = re.sub(", 1\)", ", " + str(opacity) + ")", color_marker[0])
+        model_marker = dict(size=20, color=color_marker, symbol=symbol)
+        fig.add_trace(go.Scatter(x=df_model["full_x"],
+                                 y=df_model["rel_change"] * multi,
+                                 name=full_model_name,
+                                 showlegend=show_legend,
+                                 marker=model_marker,
+                                 legendgroup=full_model_name,
+                                 mode="markers",
+                                 hovertemplate="%{x}: %{y:.1%}"),
+                      row=1, col=subplot_col)
+    df_comp_ens = df[df[legend_col] == ens_name]
+    fig.add_trace(go.Scatter(x=df_comp_ens["full_x"],
+                             y=df_comp_ens["rel_change"] * multi,
+                             name=ens_name,
+                             showlegend=show_legend,
+                             marker=ens_marker,
+                             legendgroup=ens_name,
+                             mode="markers",
+                             hovertemplate="%{x}: %{y:.1%}"),
+                  row=1, col=subplot_col)
+    # Add horizon line
+    if add_zero_line is True:
+        fig.add_hline(y=0, line_width=1, line_color="black", line_dash="dash")
+    return fig
+
+
+def make_point_comparison_plot(df, ens_name, plot_comparison=None, title=None, height=1000, theme="plotly_white",
+                               color_dict=None, style="individual", x_col="target", x_dictionary=None,
+                               x_order=None, subplot=False, subplot_col=None, subplot_titles=None, share_x="all",
+                               share_y="all", legend_dict=None, legend_col="model_name", palette="turbo"):
+    # Prerequisite
+    if style == "inverse":
+        multiply = -1
+    else:
+        multiply = 1
+    # Prepare subplot
+    if subplot is True:
+        sub_var = df[subplot_col].unique()
+        fig = prep_subplot(sub_var, subplot_titles, "", "", sort=False, share_x=share_x, share_y=share_y)
+    else:
+        fig = go.Figure()
+    # Plot
+    if x_dictionary is not None:
+        x_list = []
+        for x_val in df[x_col]:
+            x_list.append(x_dictionary[x_val])
+    else:
+        x_list = df[x_col]
+    df_all = df.copy()
+    df_all.loc[:, "full_x"] = x_list
+    if x_order is not None:
+        df_all["full_x"] = pd.CategoricalIndex(df_all["full_x"], ordered=True, categories=x_order)
+        df_all = df_all.sort_values("full_x", ascending=True)
+    if style == "individual":
+        plot_comparison = list(df_all["comparison"].drop_duplicates())
+        for comparison in plot_comparison:
+            subplot_col = plot_comparison.index(comparison) + 1
+            if comparison == plot_comparison[0]:
+                show_legend = True
+            else:
+                show_legend = False
+            df_comp = df_all[df_all["comparison"] == comparison]
+            fig = add_point_scatter(fig, df_comp, ens_name, color_dict, legend_dict=legend_dict,
+                                    show_legend=show_legend, subplot_col=subplot_col, add_zero_line=True,
+                                    legend_col=legend_col, palette=palette, multiply=multiply)
+    else:
+        x_list_unique = []
+        for x_val in x_list:
+            if x_val not in x_list_unique:
+                x_list_unique.append(x_val)
+        x_axis_def = dict(zip(x_list_unique, range(1, len(x_list_unique) + 1)))
+        tick_x1 = tick_label1 = tick_x2 = tick_label2 = []
+        for targ in df_all["full_x"].drop_duplicates():
+            df_sub = df_all[df_all["full_x"] == targ]
+            for comp in plot_comparison:
+                list_comparison = list(comp.keys())
+                df_sub_c = df_sub[df_sub["comparison"].isin(list(list_comparison))].copy()
+                subplot_col = list(plot_comparison).index(comp) + 1
+                for comparison in list_comparison:
+                    if comparison == list_comparison[0]:
+                        x_axis = int(x_axis_def[targ]) + 0
+                        if comp == list(plot_comparison)[0] and \
+                                targ == list(df_all["full_x"].drop_duplicates())[0]:
+                            show_legend = True
+                        else:
+                            show_legend = False
+                    else:
+                        x_axis = int(x_axis_def[targ]) + 0.65
+                        show_legend = False
+                    if comp == list(plot_comparison)[0]:
+                        tick_x1.append(x_axis)
+                        tick_label1.append(str(targ) + " - " + comparison)
+                    else:
+                        tick_x2.append(x_axis)
+                        tick_label2.append(str(targ) + " - " + comparison)
+                    df_sub_c["x_target"] = x_axis
+                    fig = add_point_scatter(fig, df_sub_c, ens_name, color_dict, legend_dict=legend_dict,
+                                            show_legend=show_legend, subplot_col=subplot_col, add_zero_line=True,
+                                            legend_col=legend_col, palette=palette, multiply=multiply)
+        fig.update_layout(xaxis1=dict(tickmode="array", tickvals=tick_x1, ticktext=tick_label1))
+        fig.update_layout(xaxis2=dict(tickmode="array", tickvals=tick_x2, ticktext=tick_label2))
+    # Update Layout
+    fig.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True, tickangle=20)
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True, tickformat=".1%")
+    if isinstance(plot_comparison, dict):
+        legend_param = dict(orientation="h", yanchor="top", xanchor="left", traceorder="grouped")
+    else:
+        legend_param = dict(orientation="v", yanchor="top", xanchor="left", traceorder="grouped")
+    fig.update_layout(
+        title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5, yref="paper"),
+        height=height, template=theme, legend=legend_param
+    )
+    return fig

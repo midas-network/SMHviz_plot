@@ -1,4 +1,5 @@
 import re
+import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -26,7 +27,7 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     :type font_size: int
     :parameter subplot_spacing: Space between subplot rows and columns, must be a float between 0 and 1; by default
         `0.05`
-    :type subplot_spacing: int
+    :type subplot_spacing: int | float
     :parameter share_x: Share x-axis in-between subplots. See `plotly.subplots.make_subplots()` for more information;
         by default `"all"`
     :type share_x: bool | str
@@ -281,3 +282,14 @@ def color_line_trace(color_dict, mod_name, ensemble_name=None, ensemble_color=No
         color = color_dict[mod_name]
         line_width = line_width
     return [color, line_width]
+
+
+def make_palette(df, legend_col, palette="turbo"):
+    if len(df[legend_col].unique()) > 1:
+        palette_list = px.colors.sample_colorscale(palette, len(df[legend_col].unique()))
+        for i in range(0, len(palette_list)):
+            palette_list[i] = re.sub("\)", ", 1)", re.sub("rgb", "rgba", palette_list[i]))
+        color_dict = dict(zip(df[legend_col].unique(), palette_list))
+    else:
+        color_dict = dict(zip(df[legend_col].unique(), "rgba(0, 0, 255, 1)"))
+    return color_dict
