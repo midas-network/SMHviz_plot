@@ -90,8 +90,11 @@ def calculate_relative_change(df, comp, comparison_reference, on_vars):
     return df_rel_change
 
 
-def scen_comparison_data(df, max_week, zeroed, comparison_reference, model_exclusion=None, calc_week=False):
+def scen_comparison_data(df, max_week, end_method, comparison_reference, model_exclusion=None, calc_week=False,
+                         on_vars=None):
     # Model
+    if on_vars is None:
+        on_vars = ["target", "model_name"]
     model_list = list(df["model_name"].drop_duplicates())
     if model_exclusion is not None:
         for j in model_exclusion:
@@ -106,20 +109,14 @@ def scen_comparison_data(df, max_week, zeroed, comparison_reference, model_exclu
         for targ in df_endvalue["target"].drop_duplicates():
             df_targ = df_scen[df_scen["target"] == targ]
             for model in df_endvalue["model_name"].drop_duplicates():
-                if (zeroed is True) or (zeroed == "True"):
-                    df_end = zeroed_cum_data(df_targ, max_week, scen, model, targ, calc_week)
-                elif zeroed == "Sample":
-                    df_end = end_cum_value(df_targ, max_week, scen, model, targ)
+                if end_method == zeroed_cum_data:
+                    df_end = end_method(df_targ, max_week, scen, model, targ, calc_week)
                 else:
-                    df_end = model_cum_data(df_targ, max_week, scen, model, targ)
+                    df_end = end_method(df_targ, max_week, scen, model, targ)
                 df_value.append(df_end)
     df = pd.concat(df_value)
     # Relative change
     df_all = []
-    if (zeroed is True) or (zeroed == "True"):
-        on_vars = ["target", "model_name", "week"]
-    else:
-        on_vars = ["target", "model_name"]
     for comparison in comparison_reference:
         if isinstance(comparison, dict):
             for i in comparison.keys():
