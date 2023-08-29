@@ -258,7 +258,7 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
     :type show_legend: bool
     :parameter opacity: Opacity level of the intervals (ribbons); by default `None`, will generate opacity for each
         `intervals` value starting at 0.1 with a step of 0.1.
-    :type opacity: list
+    :type opacity: int | float
     :parameter connect_gaps: Boolean to connect the gaps, by default `True`
     :type connect_gaps: bool
     :parameter subplot_coord: For subplots, a list with 2 values: [row number, column number] indicating on which
@@ -438,7 +438,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         plotly.express.colors scale.
     :type color_dict: dict
     :parameter opacity: Opacity level of the intervals (ribbons); by default `0.1`.
-    :type opacity: list
+    :type opacity: int | float
     :parameter palette: Name of the palette to create `color_dict` if `color_dict` is set to `None`. By default,
         "turbo". Value accepted should come from plotly.express.colors scale.
     :type palette: str
