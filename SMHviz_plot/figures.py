@@ -768,25 +768,78 @@ def make_point_comparison_plot(df, ens_name, plot_comparison=None, title=None, h
 
 def make_heatmap_plot(df, show_legend=True, subplot=False, subplot_col=None, subplot_titles=None, palette="ylorrd",
                       share_x="all", share_y="all", x_col="target_end_date", y_col="location_name", title=None,
-                      height=1000, theme="plotly_white"):
+                      height=1000, theme="plotly_white", sub_nrow=1, orientation="h"):
     if subplot is True:
         sub_var = list(df[subplot_col].unique())
         fig = prep_subplot(sub_var, subplot_titles, "", "", sort=False, share_x=share_x, share_y=share_y,
-                           row_num=1)
+                           row_num=sub_nrow)
         for var in sub_var:
             df_plot = df[df[subplot_col] == var]
             if var == sub_var[0]:
                 show_legend = show_legend
             else:
                 show_legend = False
-            col_coord = sub_var.index(var) + 1
+            plot_coord = subplot_row_col(sub_var, var, orientation=orientation)
             fig = fig.add_trace(
                 go.Heatmap(z=df_plot["value"], x=df_plot[x_col], y=df_plot[y_col], coloraxis="coloraxis",
                            hovertemplate="x: %{x}<br>y: %{y}<br>z: %{z}<extra></extra>"),
-                row=1, col=col_coord)
+                row=plot_coord[0], col=plot_coord[1])
     else:
         fig = go.Figure(data=go.Heatmap(z=df["value"], x=df[x_col], y=df[y_col], coloraxis="coloraxis"))
     fig.update_layout(
         title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5, yref="paper"),
         height=height, template=theme, coloraxis={'colorscale': palette, 'colorbar': {'title': "Peak Probability"}})
+    return fig
+
+
+def add_box_plot(df_var, fig, x_col="model_name", y_col="type_id", box_value=None, color_dict=None,
+                 box_orientation="h", show_legend=False, plot_coord=None):
+    if plot_coord is None:
+        plot_coord = [1, 1]
+    if box_value is None:
+        box_value = [0.01, 0.25, 0.5, 0.75, 0.99]
+    for x_val in df_var[x_col].unique():
+        df_plot = df_var[df_var[x_col] == x_val]
+        if color_dict is None:
+            color_x_val = "black"
+        else:
+            color_x_val = color_dict[x_val]
+        fig = fig.add_trace(go.Box(
+            orientation=box_orientation,
+            y=df_plot[x_col].astype(str),
+            lowerfence=df_plot[df_plot[y_col] == box_value[0]]["value"],
+            q1=df_plot[df_plot[y_col] == box_value[1]]["value"],
+            median=df_plot[df_plot[y_col] == box_value[2]]["value"],
+            q3=df_plot[df_plot[y_col] == box_value[3]]["value"],
+            upperfence=df_plot[df_plot[y_col] == box_value[4]]["value"],
+            marker_color=color_x_val,
+            name=x_val, showlegend=show_legend),
+            row=plot_coord[0], col=plot_coord[1])
+    return fig
+
+
+def make_boxplot_plot(df, show_legend=False, subplot=False, subplot_col=None, subplot_titles=None, sub_nrow=1,
+                      share_x="all", share_y="all", x_col="model_name", y_col="type_id", title=None, box_value=None,
+                      height=1000, theme="plotly_white", sub_orientation="v", color_dict=None, box_orientation="h"):
+    if subplot is True:
+        sub_var = list(df[subplot_col].unique())
+        fig = prep_subplot(sub_var, subplot_titles, "", "", sort=False, share_x=share_x, share_y=share_y,
+                           row_num=sub_nrow)
+        for var in sub_var:
+            df_var = df[df[subplot_col] == var]
+            if var == sub_var[0]:
+                show_legend = show_legend
+            else:
+                show_legend = False
+            plot_coord = subplot_row_col(sub_var, var, orientation=sub_orientation)
+            fig = add_box_plot(df_var, fig, x_col=x_col, y_col=y_col, box_value=box_value, color_dict=color_dict,
+                               box_orientation=box_orientation, show_legend=show_legend, plot_coord=plot_coord)
+    else:
+        fig = go.Figure()
+        fig = add_box_plot(df, fig, x_col=x_col, y_col=y_col, box_value=box_value, color_dict=color_dict,
+                           box_orientation=box_orientation, show_legend=show_legend, plot_coord=[1, 1])
+
+    fig.update_layout(
+        title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5, yref="paper"),
+        height=height, template=theme)
     return fig

@@ -64,30 +64,44 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     return fig
 
 
-def subplot_row_col(sub_var, var):
+def subplot_row_col(sub_var, var, orientation=None):
     """ Returns row and column information
 
     For a subplots Figure, returns the associated row and column information for a specific value for an object
-    created with `prep_subplot()` function and containing less than 7 plots in the subplot object.
+    created with `prep_subplot()` function and containing less than 7 plots in the subplot object for None orientation.
+    If orientation is not None, all the subplots are either in 1 column ("v") or 1 row ("h")
 
     :parameter sub_var: List of value associated with the variable used to create the subplot (for example: list of
         scenario value associated with the column `scenario_id`
     :type sub_var: list
     :parameter var: A specific value from the `sub_var` list
     :type var: str | float | int
+    :parameter orientation: string to indicate the subplots are either in 1 column ("v") or 1 row ("h")
+    :type orientation: str
     :return: a list with 2 values: [row number, column number] in the subplots
     """
-    scen_order_dict = dict(zip(sub_var, list(range(len(sub_var)))))
-    if scen_order_dict[var] < 2:
-        n_row = 1
-    elif scen_order_dict[var] < 4:
-        n_row = 2
+    if orientation is None:
+        scen_order_dict = dict(zip(sub_var, list(range(len(sub_var)))))
+        if scen_order_dict[var] < 2:
+            n_row = 1
+        elif scen_order_dict[var] < 4:
+            n_row = 2
+        else:
+            n_row = 3
+        if scen_order_dict[var] % 2 == 0:
+            n_col = 1
+        else:
+            n_col = 2
     else:
-        n_row = 3
-    if scen_order_dict[var] % 2 == 0:
-        n_col = 1
-    else:
-        n_col = 2
+        if orientation == "h":
+            n_col = sub_var.index(var) + 1
+            n_row = 1
+        elif orientation == "v":
+            n_row = sub_var.index(var) + 1
+            n_col = 1
+        else:
+            n_col = 1
+            n_row = 1
     return [n_row, n_col]
 
 
