@@ -688,7 +688,8 @@ def make_point_comparison_plot(df, ens_name, plot_comparison=None, title=None, h
     # Prepare subplot
     if subplot is True:
         sub_var = df[subplot_col].unique()
-        fig = prep_subplot(sub_var, subplot_titles, "", "", sort=False, share_x=share_x, share_y=share_y)
+        fig = prep_subplot(sub_var, subplot_titles, "", "", sort=False, share_x=share_x, share_y=share_y,
+                           row_num=1)
     else:
         fig = go.Figure()
     # Plot
@@ -762,4 +763,30 @@ def make_point_comparison_plot(df, ens_name, plot_comparison=None, title=None, h
         title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5, yref="paper"),
         height=height, template=theme, legend=legend_param
     )
+    return fig
+
+
+def make_heatmap_plot(df, show_legend=True, subplot=False, subplot_col=None, subplot_titles=None, palette="ylorrd",
+                      share_x="all", share_y="all", x_col="target_end_date", y_col="location_name", title=None,
+                      height=1000, theme="plotly_white"):
+    if subplot is True:
+        sub_var = list(df[subplot_col].unique())
+        fig = prep_subplot(sub_var, subplot_titles, "", "", sort=False, share_x=share_x, share_y=share_y,
+                           row_num=1)
+        for var in sub_var:
+            df_plot = df[df[subplot_col] == var]
+            if var == sub_var[0]:
+                show_legend = show_legend
+            else:
+                show_legend = False
+            col_coord = sub_var.index(var) + 1
+            fig = fig.add_trace(
+                go.Heatmap(z=df_plot["value"], x=df_plot[x_col], y=df_plot[y_col], coloraxis="coloraxis",
+                           hovertemplate="x: %{x}<br>y: %{y}<br>z: %{z}<extra></extra>"),
+                row=1, col=col_coord)
+    else:
+        fig = go.Figure(data=go.Heatmap(z=df["value"], x=df[x_col], y=df[y_col], coloraxis="coloraxis"))
+    fig.update_layout(
+        title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5, yref="paper"),
+        height=height, template=theme, coloraxis={'colorscale': palette, 'colorbar': {'title': "Peak Probability"}})
     return fig

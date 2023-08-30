@@ -5,7 +5,7 @@ from plotly.subplots import make_subplots
 
 
 def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, subplot_spacing=0.05, share_x="all",
-                 share_y="all"):
+                 share_y="all", row_num=None):
     """ Prepare Plotly subplot object
 
     Prepared a Plotly Figure object with predefined subplots information:
@@ -34,21 +34,28 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     :parameter share_y: Share y-axis in-between subplots. See `plotly.subplots.make_subplots()` for more information;
         by default `"all"`
     :type share_y: bool | str
+    :parameter row_num: If `row_num` is not None, force a number of rows in the output subplots; the number of column
+        is automatically calculated with the length of `sub_var` parameter (`round((len(sub_var) / row_num) + 0.4)`)
+    :type row_num: int
     :return: a Plotly subplots object; `plotly.graph_objs.Figure` with predefined subplots configured in 'layout
     """
     # Sort value
     if sort is True:
         sub_var.sort()
     # Row and Columns information
-    if len(sub_var) > 2:
-        col_num = 2
-        if len(sub_var) % 2 == 0:
-            row_num = len(sub_var) / 2
+    if row_num is None:
+        if len(sub_var) > 2:
+            col_num = 2
+            if len(sub_var) % 2 == 0:
+                row_num = len(sub_var) / 2
+            else:
+                row_num = (len(sub_var) + 1) / 2
         else:
-            row_num = (len(sub_var) + 1) / 2
+            row_num = 1
+            col_num = len(sub_var)
     else:
-        row_num = 1
-        col_num = len(sub_var)
+        row_num = row_num
+        col_num = round((len(sub_var) / row_num) + 0.4)
     # Subplots
     fig = make_subplots(rows=int(row_num), cols=int(col_num), subplot_titles=sub_title, shared_yaxes=share_y,
                         shared_xaxes=share_x, vertical_spacing=subplot_spacing, horizontal_spacing=subplot_spacing,
