@@ -615,7 +615,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
             h_info = h_lines[h_name]
             fig_plot.add_hline(y=h_info["value"], line_width=1, line_color=h_info["color"],
                                line_dash="dash", annotation=dict(font_size=10, font_color=h_info["color"]),
-                               annotation_position="bottom left",
+                               annotation_position="top left",
                                annotation_text=h_info["text"])
     # Update layout
     fig_plot = subplot_fig_output(fig_plot, title=title, subtitle=subtitle, height=height, theme=theme)
