@@ -843,3 +843,81 @@ def make_boxplot_plot(df, show_legend=False, subplot=False, subplot_col=None, su
         title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5, yref="paper"),
         height=height, template=theme)
     return fig
+
+
+def add_bar_plot(fig, df_var, df_other=None, truth_data=None, df_x="target_end_date", df_other_x="target_end_date",
+                 truth_data_x="time_value", show_legend=True, obs_legend=True, title=None, height=1000, plot_coord=None,
+                 var="Pathogen", other_var="Second Pathogen", truth_data_legend_name="Observed Data",
+                 truth_data_tot_legend_name="Observed Data", theme="plotly_white"):
+    if plot_coord is None:
+        plot_coord = [1, 1]
+    if truth_data is not None:
+        fig.add_trace(go.Scatter(x=truth_data[truth_data_x], y=truth_data["value"],
+                                 legendgroup="observed_data", name=truth_data_legend_name,
+                                 marker=dict(color="black"), visible="legendonly", showlegend=obs_legend,
+                                 hovertemplate=str(truth_data_legend_name) + ": %{y:,.2f}" + "<extra></extra>"),
+                      row=plot_coord[0], col=plot_coord[1])
+        if "tot_value" in truth_data.columns:
+            fig.add_trace(go.Scatter(x=truth_data[truth_data_x], y=truth_data["tot_value"],
+                                     legendgroup="all_observed_data",
+                                     name=truth_data_tot_legend_name,
+                                     hovertemplate=str(truth_data_tot_legend_name) + ": %{y:,.2f}<extra></extra>",
+                                     marker=dict(color="lightslategray"), visible="legendonly",
+                                     showlegend=obs_legend),
+                          row=plot_coord[0], col=plot_coord[1])
+    fig.add_trace(
+        go.Bar(x=df_var[df_x], y=df_var["value"], legendgroup=var,
+               name=var, hovertemplate=str(var) + ": %{y:,.2f}<extra></extra>"),
+        row=plot_coord[0], col=plot_coord[1])
+    if df_other is not None:
+        fig.add_trace(go.Bar(x=df_other[df_other_x], y=df_other["value"], legendgroup=other_var,
+                             name=other_var, showlegend=show_legend,
+                             marker=dict(color="deepskyblue"),
+                             hovertemplate=str(other_var) + ": %{y:,.2f}<extra></extra>"),
+                      row=plot_coord[0], col=plot_coord[1])
+    fig.update_xaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='black', mirror=True)
+    fig.update_layout(
+        title=dict(text=title, xanchor="center", xref="paper", x=0.5, y=0.975, yanchor="middle"),
+        height=height, template=theme, barmode="stack", hovermode="x",
+        legend=dict(orientation="h", yanchor="top", xanchor="left", traceorder="grouped")
+    )
+    return fig
+
+
+def make_bar_plot(df, df_other=None, truth_data=None, df_x="target_end_date", df_other_x="target_end_date",
+                  truth_data_x="time_value", show_legend=True, subplot=False, title=None, height=1000,
+                  subplot_col=None, truth_data_legend_name="Observed Data", truth_data_tot_legend_name="Observed Data",
+                  df_legend_name="Pathogen", df_other_legend_name="Second Pathogen", subplot_titles=None,
+                  share_x="all", share_y="all", x_title="", y_title="N", theme="plotly_white"):
+    if subplot is True:
+        sub_var = list(df[subplot_col].unique())
+        fig = prep_subplot(sub_var, subplot_titles, x_title, y_title, sort=False, share_x=share_x, share_y=share_y)
+        for var in sub_var:
+            df_var = df[df[subplot_col] == var]
+            if var == sub_var[0]:
+                show_legend = show_legend
+                if truth_data is not None:
+                    obs_legend = show_legend
+                else:
+                    obs_legend = False
+            else:
+                show_legend = False
+                obs_legend = False
+            plot_coord = subplot_row_col(sub_var, var)
+            other_var = list(df_other[subplot_col].unique())[0]
+            fig = add_bar_plot(fig, df_var, df_other=df_other, truth_data=truth_data, df_x=df_x, df_other_x=df_other_x,
+                               truth_data_x=truth_data_x, show_legend=show_legend, obs_legend=obs_legend,
+                               title=title, height=height, plot_coord=plot_coord, var=var, other_var=other_var,
+                               truth_data_legend_name=truth_data_legend_name,
+                               truth_data_tot_legend_name=truth_data_tot_legend_name, theme=theme)
+
+    else:
+        fig = go.Figure()
+        fig = add_bar_plot(fig, df, df_other=df_other, truth_data=truth_data, df_x=df_x, df_other_x=df_other_x,
+                           truth_data_x=truth_data_x, show_legend=show_legend, obs_legend=show_legend,
+                           title=title, height=height, plot_coord=[1, 1], var=df_legend_name,
+                           other_var=df_other_legend_name,
+                           truth_data_legend_name=truth_data_legend_name,
+                           truth_data_tot_legend_name=truth_data_tot_legend_name, theme=theme)
+    return fig
