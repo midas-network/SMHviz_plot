@@ -312,5 +312,5 @@ def make_palette(df, legend_col, palette="turbo"):
             palette_list[i] = re.sub("\)", ", 1)", re.sub("rgb", "rgba", palette_list[i]))
         color_dict = dict(zip(df[legend_col].unique(), palette_list))
     else:
-        color_dict = dict(zip(df[legend_col].unique(), "rgba(0, 0, 255, 1)"))
+        color_dict = dict(zip(df[legend_col].unique(), ["rgba(0, 0, 255, 1)"]))
     return color_dict
