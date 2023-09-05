@@ -40,7 +40,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     :type show_legend: bool
     :parameter subplot_coord: For subplots, a list with 2 values: [row number, column number] indicating on which
         subplots to add the trace. `None` for non subplots object (default)
-    :type subplot_coord: list | str
+    :type subplot_coord: list | str | None
     :parameter hover_text: Appending text appearing on hover; by default, `""`
     :type hover_text: str
     :return: a plotly.graph_objs.Figure object with an added trace
@@ -920,4 +920,65 @@ def make_bar_plot(df, df_other=None, truth_data=None, df_x="target_end_date", df
                            other_var=df_other_legend_name,
                            truth_data_legend_name=truth_data_legend_name,
                            truth_data_tot_legend_name=truth_data_tot_legend_name, theme=theme)
+    return fig
+
+
+def add_spaghetti_plot(fig, df, color_dict=None, palette="turbo",
+                       legend_col="model_name", spag_col="type_id", show_legend=True, hover_text="", opacity=0.3,
+                       subplot_coord=None, add_median=False, median=0.5):
+    if color_dict is None:
+        color_dict = make_palette(df, legend_col, palette=palette)
+    for leg in df[legend_col].drop_duplicates():
+        df_plot = df[df[legend_col] == leg]
+        if add_median is True:
+            df_plot_med = df_plot[df_plot[spag_col] == median]
+            df_plot = df_plot[df_plot[spag_col] != median]
+        else:
+            df_plot_med = None
+        col_line = color_line_trace(color_dict, leg)
+        for i in df_plot[spag_col].drop_duplicates():
+            df_plot_i = df_plot[df_plot[spag_col] == i]
+            if i == list(df_plot[spag_col].drop_duplicates())[0]:
+                show_legend = show_legend
+            else:
+                show_legend = False
+            fig = add_scatter_trace(fig, df_plot_i, leg, x_col="target_end_date", show_legend=show_legend,
+                                    mode="lines", subplot_coord=subplot_coord,
+                                    hover_text=hover_text + spag_col.title() + ": " + str(int(i)) + "<br>",
+                                    color=re.sub(", 1\)", ", " + str(opacity) + ")", col_line[0]))
+        if add_median is True and df_plot_med is not None:
+            fig = add_scatter_trace(fig, df_plot_med, leg, x_col="target_end_date", show_legend=show_legend,
+                                    mode="lines", subplot_coord=subplot_coord, width=4,
+                                    hover_text=hover_text + spag_col.title() + ": Median <br>", color=col_line[0])
+    return fig
+
+
+def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_legend=True, hover_text="", opacity=0.3,
+                        subplot=False, title="", height=1000, subplot_col=None, subplot_titles=None, palette="turbo",
+                        share_x="all", share_y="all", x_title="", y_title="N", theme="plotly_white", color_dict=None,
+                        add_median=False):
+    # Colorscale
+    if color_dict is None:
+        color_dict = make_palette(df, legend_col, palette=palette)
+    if subplot is True:
+        sub_var = list(df[subplot_col].unique())
+        fig = prep_subplot(sub_var, subplot_titles, x_title, y_title, sort=False, share_x=share_x, share_y=share_y)
+        for var in sub_var:
+            df_var = df[df[subplot_col] == var]
+            plot_coord = subplot_row_col(sub_var, var)
+            if var == sub_var[0]:
+                show_legend = show_legend
+            else:
+                show_legend = False
+            fig = add_spaghetti_plot(fig, df_var, color_dict=color_dict, palette=palette, legend_col=legend_col,
+                                     spag_col=spag_col, show_legend=show_legend, hover_text=hover_text,
+                                     opacity=opacity, subplot_coord=plot_coord, add_median=add_median)
+
+    else:
+        fig = go.Figure()
+        fig.update_layout(xaxis_title=x_title, yaxis_title=y_title)
+        fig = add_spaghetti_plot(fig, df, color_dict=color_dict, palette=palette, legend_col=legend_col,
+                                 spag_col=spag_col, show_legend=show_legend, hover_text=hover_text,
+                                 opacity=opacity, subplot_coord=None, add_median=add_median)
+    fig = subplot_fig_output(fig, title, subtitle="", height=height, theme=theme)
     return fig
