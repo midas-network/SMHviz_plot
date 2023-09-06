@@ -305,7 +305,7 @@ def color_line_trace(color_dict, mod_name, ensemble_name=None, ensemble_color=No
     return [color, line_width]
 
 
-def make_palette(df, legend_col, palette="turbo"):
+def make_palette_sequential(df, legend_col, palette="turbo"):
     if len(df[legend_col].unique()) > 1:
         palette_list = px.colors.sample_colorscale(palette, len(df[legend_col].unique()))
         for i in range(0, len(palette_list)):
