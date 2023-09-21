@@ -465,7 +465,8 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     :type v_lines: dict
     :parameter h_lines: Dictionary containing the description of one or possible multiple red dashed horizontal line
         on the plot, should be structured as:
-        h_lines = {"<name>":{"value": <value>, "text": <associated text>, "color": <associated color>}}`;
+        h_lines = {"<name>":{"value": <value>, "text": <associated text>, "color": <associated color>,
+                   "font_color":<associated font color>}}`;
         by default `None`
     :type h_lines: dict
     :parameter zoom_in_projection: Dictionary containing `x_min`, `x_max`, `y_min` and `y_max` value, to used as
@@ -615,7 +616,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         for h_name in h_lines:
             h_info = h_lines[h_name]
             fig_plot.add_hline(y=h_info["value"], line_width=1, line_color=h_info["color"],
-                               line_dash="dash", annotation=dict(font_size=10, font_color=h_info["color"]),
+                               line_dash="dash", annotation=dict(font_size=10, font_color=h_info["font_color"]),
                                annotation_position="top left",
                                annotation_text=h_info["text"])
     # Update layout
@@ -627,9 +628,52 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     return fig_plot
 
 
-def add_point_scatter(fig, df, ens_name, color_dict, multiply=1, symbol="circle", ens_symbol="diamond-wide",
+def add_point_scatter(fig, df, ens_name, color_dict=None, multiply=1, symbol="circle", ens_symbol="diamond-wide",
                       size=20, opacity=0.7, legend_dict=None, show_legend=True, subplot_col=None, add_zero_line=True,
                       legend_col="model_name", palette="turbo"):
+    """Add point scatter trace to a Figure
+
+    Add point on Figure object.
+    For more information on the parameters, please consult the plotly.graph_objects.Scatter() documentation
+
+    :parameter fig: a Figure object to update
+    :type fig: plotly.graph_objs.Figure
+    :parameter df: Data frame containing the data to plot
+    :type df: pandas.DataFrame
+    :parameter ens_name: Name of the "Ensemble" variable, to plot on top of the other with a specific color
+        (black) and symbol (see parameters `ens_symbol`). The name should be a value contains in the column
+        defined via the `legend_col` parameter
+    :type ens_name: str
+    :parameter color_dict: Dictionary containing each legend value and the associated color, if `None` will
+        be created by using the legend_col and palette parameter. Default, `None`
+    :type color_dict: dict | str | None
+    :parameter multiply: a value to multiply all the value. By default, 1
+    :type multiply: int | float
+    :parameter symbol: Marker symbol, by default "circle"
+    :type symbol: str
+    :parameter ens_symbol: "Ensemble" marker symbol. By default, "diamond-wide"
+    :type ens_symbol: str
+    :parameter size: Size of the markers
+    :type size: int
+    :parameter opacity: Opacity of the markers. By default, 0.7
+    :type opacity: int | float
+    :parameter legend_dict: a dictionary with value associated with `legend_col` variable (key, as in `df`) and
+        associated full name (value, for  legend purposes). If `None` (default), use information from the
+        `legend_col` column for legend
+    :type legend_dict: dict
+    :parameter show_legend: Boolean, to show the legend. By default, True
+    :type show_legend: bool
+    :parameter subplot_col: Name of the column used to create the subplot (for example: subplot by list of
+        scenario value associated with the column `scenario_id`). By default, None (no subplot)
+    :type subplot_col: str | None
+    :parameter add_zero_line: Boolean, to add a dot horizontal line showing the 0 axis. By default, True
+    :type add_zero_line: bool
+    :parameter legend_col: Name of the column to use for the legend. By default, "model_name"
+    :type legend_col: str
+    :parameter palette: Name of the palette to apply, if `color_dict` is not set to None. By default, "turbo"
+    :type palette: str
+    :return: a plotly.graph_objs.Figure object
+    """
     # prerequisite
     ens_marker = dict(symbol=ens_symbol, size=size, color="rgba(0,0,0," + str(opacity) + ")")
     multi = multiply

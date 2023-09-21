@@ -306,6 +306,21 @@ def color_line_trace(color_dict, mod_name, ensemble_name=None, ensemble_color=No
 
 
 def make_palette_sequential(df, legend_col, palette="turbo"):
+    """ Legend Color Dictionary
+
+    Create a dictionary with the legend value and the associated color associated with each unique item.
+    The color are infer from the palette information:
+        - either a name of a sequential plotly express colors palette, or
+        - a list of rgb colors.
+
+    :parameter df: a Pandas Data Frame containing the data to plot
+    :type df: pandas.DataFrame
+    :parameter legend_col: name of the column containing the legend variable
+    :type legend_col: str
+    :parameter palette: name of the palette or list of colors in rgb format. By default, "turbo"
+    :type palette: list | str
+    :return: a dictionary with the legend value and the associated color (derived from the palette information)
+    """
     if len(df[legend_col].unique()) > 1:
         palette_list = px.colors.sample_colorscale(palette, len(df[legend_col].unique()))
         for i in range(0, len(palette_list)):
