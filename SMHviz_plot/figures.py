@@ -130,7 +130,7 @@ def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y
 
 
 def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_col="value", color=None,
-               opacity=0.1, subplot_coord=None, hover_text="", line_width=0, rm_second_hover=False,
+               opacity=0.1, subplot_coord=None, hover_text="", line_width=0.001, rm_second_hover=False,
                show_legend=False):
     """ Add Intervals (ribbons) on Figure
 
@@ -166,7 +166,7 @@ def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_
     :type subplot_coord: list | str
     :parameter hover_text: Appending text appearing on hover; by default, `""`
     :type hover_text: str
-    :parameter line_width: Width of the lines on the border of the intervals, by default `0`
+    :parameter line_width: Width of the lines on the border of the intervals, by default `0.001`
     :type line_width: float | int
     :parameter rm_second_hover: Boolean to remove hover associated with the second `quant_sel` value; by default
         `FALSE`
