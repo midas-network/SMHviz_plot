@@ -347,7 +347,7 @@ def prep_multipat_plot_comb(pathogen_information):
     """
     all_sample = pd.DataFrame()
     f = {'value': [med, q1, q2, q3, q4, q5, q6, q7, q8]}
-    f2 = {'proportion': [med, q1, q2, q3, q4, q5, q6, q7, q8]}
+    f2 = {}
     for patho in pathogen_information:
         # Preparation
         pathogen_name = patho.lower()
