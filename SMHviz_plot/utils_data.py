@@ -2,15 +2,45 @@
 import pandas as pd
 
 
-def calculate_rel_change(row):
-    if row["value_ref"] == 0:
+def calculate_rel_change(row, comparison_col="value_comp", reference_col="value_ref"):
+    """ Calculate relative change
+
+    Calculate relative difference between the value in the columns comparison_col and reference_col by applying the
+    formula: `(comparison_col / reference_col) - 1` and round the output value to three digits. If the value in the
+    "reference_col" is equal to zero, `Nan` will be return.
+
+    Function used in the calculate_relative_change() function.
+
+    :parameter row: Data frame with the corresponding "comparison_col" and "reference_col".
+    :type row: pd.DataFrame
+    :parameter comparison_col: Name of the corresponding column. By default, "value_comp".
+    :type comparison_col: str
+    :parameter reference_col: Name of the corresponding column. By default, "value_ref".
+    :type reference_col: str
+    :type:
+    :return: a float
+    """
+    if row[reference_col] == 0:
         return float("Nan")
     else:
-        return round((row["value_comp"] / row["value_ref"]) - 1, 3)
+        return round((row[comparison_col] / row[reference_col]) - 1, 3)
 
 
-def calculate_zeroed_cum(row):
-    return row["end_value"] - row["value"]
+def calculate_zeroed_cum(row, col1="value", col2="end_value"):
+    """ Calculate the difference between two columns
+
+    Calculate the difference between two columns by applying the formula: `col2 - col1`.
+    Function used in the zeroed_cum_data() function
+
+    :parameter row:  Data frame with the corresponding "comparison_col" and "reference_col"
+    :type row: pd.DataFrame
+    :parameter col1: Name of the corresponding column. By default, "value"
+    :type col1: str
+    :parameter col2: Name of the corresponding column. By default, "end_value"
+    :type col2: str
+    :return: a float
+    """
+    return row[col2] - row[col1]
 
 
 def zeroed_cum_data(df, max_week, scen, model, targ, calc_week):
