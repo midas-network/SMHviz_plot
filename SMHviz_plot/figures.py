@@ -5,7 +5,7 @@ from SMHviz_plot.utils import *
 
 def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value", width=2, connect_gaps=None,
                       mode="lines+markers", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
-                      hover_text=""):
+                      hover_text="", visible=True):
     """ Add scatter trace to a Figure
 
     Add scatter trace on Figure object. By default, the hover text will be:
@@ -37,12 +37,14 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     :parameter color: Color of the trace to add, by default "rgb(110, 110, 110)"
     :type color: str
     :parameter show_legend: Boolean to show the legend; by default `True`
-    :type show_legend: bool
+    :type show_legend: bool | str
     :parameter subplot_coord: For subplots, a list with 2 values: [row number, column number] indicating on which
         subplots to add the trace. `None` for non subplots object (default)
     :type subplot_coord: list | str | None
     :parameter hover_text: Appending text appearing on hover; by default, `""`
     :type hover_text: str
+    :parameter visible: Boolean or string indicating if the trace is visible or not or "legendonly"
+    :type visible: bool | str
     :return: a plotly.graph_objs.Figure object with an added trace
     """
     if subplot_coord is None:
@@ -54,6 +56,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
                              marker=dict(color=color),
                              legendgroup=legend_name,
                              line=dict(width=width),
+                             visible=visible,
                              showlegend=show_legend,
                              hovertemplate=hover_text +
                              "Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"),
@@ -131,7 +134,7 @@ def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y
 
 def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_col="value", color=None,
                opacity=0.1, subplot_coord=None, hover_text="", line_width=0.001, rm_second_hover=False,
-               show_legend=False):
+               show_legend=False, special_hover=None):
     """ Add Intervals (ribbons) on Figure
 
     Add intervals information on Figure object. By default, the hover text will be:
@@ -173,6 +176,10 @@ def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_
     :type rm_second_hover: bool
     :parameter show_legend: Boolean to show the legend; by default `False`
     :type show_legend: bool
+    :parameter special_hover: If not None, a dictionary contains the hover text for the ribbons with the keys: "first"
+     and "second" indication the bottom and the top hover text of the ribbon, respectively. If not None will ignore
+     all others "hover" parameters
+    :type special_hover: dict | None
     :return: a plotly.graph_objs.Figure object with an added trace displaying intervals
     """
     # Prerequisite
@@ -181,10 +188,16 @@ def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_
     if color is None:
         color = "rgba(0, 0, 255, 1)"
     # Hover text
-    second_hover_text = "<extra></extra>"
-    if rm_second_hover is False:
-        second_hover_text = hover_text + str(round((quant_sel[1] - quant_sel[0]) * 100)) + \
-                            " % Interval: %{customdata:,.2f} - %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
+    if special_hover is None:
+        second_hover_text = "<extra></extra>"
+        if rm_second_hover is False:
+            second_hover_text = hover_text + str(round((quant_sel[1] - quant_sel[0]) * 100)) + \
+                                " % Interval: %{customdata:,.2f} - %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
+        first_hover_text = (hover_text + str(round((quant_sel[1] - quant_sel[0]) * 100)) +
+                            " % Interval: %{y:,.2f} - %{customdata:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>")
+    else:
+        second_hover_text = special_hover["second"]
+        first_hover_text = special_hover["first"]
     # Intervals
     fig.add_trace(go.Scatter(x=df_plot[df_plot["type_id"] == quant_sel[1]][x_col],
                              y=df_plot[df_plot["type_id"] == quant_sel[1]][y_col],
@@ -209,8 +222,7 @@ def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_
                    showlegend=False,
                    fillcolor=re.sub(", 1\)", ", " + str(opacity) + ")", color),
                    fill='tonexty',
-                   hovertemplate=hover_text + str(round((quant_sel[1] - quant_sel[0]) * 100)) +
-                        " % Interval: %{y:,.2f} - %{customdata:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"),
+                   hovertemplate=first_hover_text),
         row=subplot_coord[0], col=subplot_coord[1])
     return fig
 
@@ -667,7 +679,7 @@ def add_point_scatter(fig, df, ens_name, color_dict=None, multiply=1, symbol="ci
     :type show_legend: bool
     :parameter subplot_col: Name of the column used to create the subplot (for example: subplot by list of
         scenario value associated with the column `scenario_id`). By default, None (no subplot)
-    :type subplot_col: str | None
+    :type subplot_col: int | None
     :parameter add_zero_line: Boolean, to add a dot horizontal line showing the 0 axis. By default, True
     :type add_zero_line: bool
     :parameter legend_col: Name of the column to use for the legend. By default, "model_name"
@@ -1039,4 +1051,169 @@ def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_le
                            spag_col=spag_col, show_legend=show_legend, hover_text=hover_text,
                            opacity=opacity, subplot_coord=None, add_median=add_median, legend_dict=legend_dict)
     subplot_fig_output(fig, title, subtitle="", height=height, theme=theme)
+    return fig
+
+
+def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, opacity=0.2, color=None, palette="turbo",
+                                     intervals_dict=None, intervals=None, bar_interval=0.5, title=None,
+                                     y_axis_title=""):
+    """Create the Multi-Pathogen Combined plot
+
+    The Multi-pathogen Combined Plot contains 2 subplot representing the combination of multiple pathogens trajectories
+    for a specific location, target and a subset of scenario selected by the user.
+
+    The first subplot represents the 50%, 80%, 90% and 95% uncertainty intervals for the combination of all pathogen
+    and for each pathogen (view updated with a button). It is possible to add the observed data (or truth data) on
+    the plot via the `truth_data` parameter.
+
+    The second subplot represents the median proportion of each selected pathogen on a stacked bar plot, with a
+    50% uncertainty intervals (default value) error bars.
+
+    Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
+    0.95, 0.975, respectively.
+
+    :parameter list_df: A dictionary with 2 DataFrame: (1) "all":  median, 95%, 90%, 80%, and 50% quantiles for the
+     combined ("value" column) and for each pathogen ("value_<pathogen>" columns) and (2) "detail": median, 95%, 90%,
+     80%, and 50% quantiles proportion for each pathogen ("proportion_<pathogen>" columns). Format in the same
+     format as the output of the function `prep_multipat_plot_comb()`
+    :type list_df: dict
+    :parameter list_pathogen: list of pathogen represented in the plot
+    :type list_pathogen: list
+    :parameter truth_data: A DataFrame containing the observed data with the time in a `"time_value"` column, the
+     main pathogen value in a `"value"` column and the combined observed value in a `"tot_value"` column. By default,
+     `None`.
+    :type truth_data: pd.DataFrame | None
+    :parameter opacity: Opacity of the ribbons. By default, 0.2
+    :type opacity: float
+    :parameter color: A dictionary with the associated color for each pathogen and combined value with the name of the
+     pathogen + "combined" as key and the color in "rgba(X,Y,Z,1)" format as value. If `"None"`, a dictionary will
+     be created by using the palette parameter by default.
+    :type color: dict | None
+    :parameter palette: name of the palette or list of colors in rgb format. By default, "turbo"
+    :type palette: list | str
+    :parameter intervals_dict: Dictionary to translate `intervals` value into associated quantiles value, if "None"
+        (default), will use internal dictionary:
+            - 0.95: [q1, q8]
+            - 0.9: [q2, q7]
+            - 0.8: [q3, q6]
+            - 0.5: [q4, q5]
+    :type intervals_dict: dict
+     :parameter intervals: List of intervals to plot in the first subplot, by default `None`. If `None` , all possible
+        values: `[0.95, 0.9, 0.8, 0.5]` will be plotted
+    :type intervals: list
+    :parameter bar_interval: Interval to use for the error bar in the second subplot, by default `0.5`.
+    :type bar_interval: float
+    :parameter title: Title of the plot, by default `None` (no title).
+    :type title: str
+    :parameter y_axis_title: Title of the first subplot, by default "".
+    :type y_axis_title: str
+    :return: a plotly.graph_objs.Figure object
+    """
+    # Preparation
+    for pathogen in list_pathogen:
+        list_pathogen[list_pathogen.index(pathogen)] = list_pathogen[list_pathogen.index(pathogen)].lower()
+    if intervals_dict is None:
+        intervals_dict = {0.95: ["q1", "q8"], 0.9: ["q2", "q7"], 0.8: ["q3", "q6"], 0.5: ["q4", "q5"]}
+        # Color preparation
+        if color is None:
+            color = make_palette_sequential(pd.DataFrame(data={"pathogen": ["combined"] + list_pathogen}),
+                                            "pathogen", palette=palette)
+    # Subplot
+    fig = make_subplots(rows=2, cols=1, vertical_spacing=0.05, shared_xaxes=True)
+
+    # Scatter plot
+    scatter_df = list_df["all"]
+    col_value = ["value_" + pathogen for pathogen in list_pathogen] + ["value"]
+    df_plot = pd.wide_to_long(scatter_df.reset_index(), col_value, j="type_id", i="target_end_date",
+                              suffix="\\w+", sep="-").reset_index()
+    df_plot.sort_values("target_end_date")
+    if intervals is None:
+        intervals = [0.95, 0.9, 0.8, 0.5]
+    intervals.sort(reverse=True)
+    for j in ["combined"] + list_pathogen:
+        if j == "combined":
+            col_name = ""
+        else:
+            col_name = "_" + j
+        for i in range(0, len(intervals)):
+            if i == 0:
+                show_leg = True
+            else:
+                show_leg = False
+            quant_sel = intervals_dict[intervals[i]]
+            second_hover_text = (str(round(intervals[i] * 100)) +
+                                 " % Interval: %{customdata:,.2f} - %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>")
+            first_hover_text = (str(
+                    round(intervals[i] * 100)) + " % Interval: %{y:,.2f} - %{customdata:,.2f}<br>Epiweek: %{x|%Y-%m-%d}"
+                                                 + "<extra></extra>")
+            fig = ui_ribbons(fig, df_plot, quant_sel, y_col="value" + col_name, legend_name=j.title(), color=color[j],
+                             show_legend=show_leg, opacity=opacity, subplot_coord=[1, 1],
+                             special_hover={"first": first_hover_text, "second": second_hover_text})
+            fig.for_each_trace(
+                lambda trace: trace.update(visible=True) if trace.name == "Combined" else (),
+            )
+            fig.for_each_trace(
+                lambda trace: trace.update(visible="legendonly") if trace.name != "Combined" else (),
+            )
+    if truth_data is not None:
+        fig = add_scatter_trace(fig, truth_data, list_pathogen[0].title() + " Observed Data", subplot_coord=[1, 1],
+                                hover_text=list_pathogen[0].title() + "<br>", color="rgba(0,0,0,1)",
+                                visible="legendonly")
+        if "tot_value" in truth_data.columns:
+            fig = add_scatter_trace(fig, truth_data, " + ".join(list_pathogen).title() + "<br> Observed Data",
+                                    y_col="tot_value", subplot_coord=[1, 1], visible="legendonly",
+                                    hover_text=" + ".join(list_pathogen).title() + "<br>")
+    # Bar plot
+    quant_sel = intervals_dict[bar_interval]
+    bar_df = list_df["detail"]
+    col_value = ["proportion_" + pathogen for pathogen in list_pathogen]
+    df_plot = pd.wide_to_long(bar_df.reset_index(), col_value, j="type_id", i="target_end_date",
+                              suffix="\\w+", sep="-").reset_index()
+    for pathogen in list_pathogen:
+        fig.add_trace(go.Bar(x=df_plot["target_end_date"], marker=dict(color=color[pathogen]),
+                             showlegend=False,
+                             y=df_plot[df_plot["type_id"] == "med"]["proportion_" + pathogen.lower()],
+                             hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>Median: %{y:,.2f}",
+                             name=pathogen.title()), row=2, col=1)
+    print(quant_sel)
+    # Update layout
+    # Button
+    title_list_pathogen = list()
+    for pathogen in list_pathogen:
+        title_list_pathogen.append(pathogen.title())
+    vis_list = list()
+    comb_list = list()
+    for i in fig.data:
+        if i["yaxis"] == "y2":
+            vis_list.append(True)
+            comb_list.append(True)
+        else:
+            if i["name"] in title_list_pathogen:
+                vis_list.append(True)
+                comb_list.append("legendonly")
+            elif i["name"] == "Combined":
+                comb_list.append(True)
+                vis_list.append("legendonly")
+            else:
+                comb_list.append("legendonly")
+                vis_list.append("legendonly")
+    button = list([
+        dict(label="Combined",
+             method="update",
+             args=[{"visible": comb_list}])
+    ])
+    button = (button +
+              list([
+                  dict(label='Pathogens',
+                       method='update',
+                       args=[{'visible': vis_list}])
+              ]))
+    # Layout
+    fig.update_layout(
+        barmode="stack", height=1000, legend={"y": 0.5, "yanchor": "bottom", "itemsizing": "constant"},
+        updatemenus=[dict(active=0, x=1.01, xanchor="left", type="buttons", buttons=button, showactive=True)],
+        template="plotly_white", yaxis_title=y_axis_title, yaxis2_title="Proportion of Each Pathogen"
+    )
+    if title is not None:
+        fig.update_layout(title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5))
     return fig

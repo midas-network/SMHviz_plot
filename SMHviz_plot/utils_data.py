@@ -331,6 +331,9 @@ def prep_multipat_plot_comb(pathogen_information):
     - Proportion of each pathogen `"proportion_<pathogen>" = "value_<pathogen>" / "value"`
     - Calculate the median, 95%, 90%, 80%, and 50% quantiles for each "value" and "proportion" columns
 
+    Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
+    0.95, 0.975, respectively.
+
     The input `pathogen_information` should be in a specific format:
 
     - `pathogen_information = {<pathogenA>: {"dataframe":<DataFrame>}, <pathogenB>: {"dataframe":<DataFrame>}, etc.}`
