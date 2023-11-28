@@ -1055,7 +1055,7 @@ def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_le
 
 
 def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, opacity=0.2, color=None, palette="turbo",
-                                     intervals_dict=None, intervals=None, bar_interval=0.5, title=None,
+                                     intervals_dict=None, intervals=None, bar_interval=0.5, bar_calc="med", title=None,
                                      y_axis_title=""):
     """Create the Multi-Pathogen Combined plot
 
@@ -1069,8 +1069,11 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     The second subplot represents the median proportion of each selected pathogen on a stacked bar plot, with a
     50% uncertainty intervals (default value) error bars.
 
+    The function `prep_multipat_plot_comb() outputs a dictionary with 2 objects: (1) "all":  median, 95%, 90%, 80%,
+    and 50% quantiles for each "value" and "value_<pathogen>-<quantile>"columns and
+    (2) "detail": median, 95%, 90%, 80%, and 50% quantiles for each "proportion_<pathogen>-<quantile>" columns.
     Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
-    0.95, 0.975, respectively.
+    0.95, 0.975, respectively. The median and mean are noted as "med" and "mean", respectively.
 
     :parameter list_df: A dictionary with 2 DataFrame: (1) "all":  median, 95%, 90%, 80%, and 50% quantiles for the
      combined ("value" column) and for each pathogen ("value_<pathogen>" columns) and (2) "detail": median, 95%, 90%,
@@ -1103,6 +1106,8 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     :type intervals: list
     :parameter bar_interval: Interval to use for the error bar in the second subplot, by default `0.5`.
     :type bar_interval: float
+    :parameter bar_calc: Value to use for the bar height, should match columns names. By default, "med"
+    :type bar_calc: str
     :parameter title: Title of the plot, by default `None` (no title).
     :type title: str
     :parameter y_axis_title: Title of the first subplot, by default "".
@@ -1172,7 +1177,7 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     for pathogen in list_pathogen:
         fig.add_trace(go.Bar(x=df_plot["target_end_date"], marker=dict(color=color[pathogen]),
                              showlegend=False,
-                             y=df_plot[df_plot["type_id"] == "med"]["proportion_" + pathogen.lower()],
+                             y=df_plot[df_plot["type_id"] == bar_calc]["proportion_" + pathogen.lower()],
                              hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>Median: %{y:,.2f}",
                              name=pathogen.title()), row=2, col=1)
     print(quant_sel)

@@ -216,112 +216,124 @@ def sample_df(df, scenario, pathogen, k=1000):
 def q1(x):
     """Calculate the quantile 0.025
 
-    Calculate the quantile 0.025 on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.025 on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.025), 2)
+    return x.quantile(0.025)
 
 
 def q2(x):
     """Calculate the quantile 0.05
 
-    Calculate the quantile 0.05 on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.05 on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.05), 2)
+    return x.quantile(0.05)
 
 
 def q3(x):
     """Calculate the quantile 0.1
 
-    Calculate the quantile 0.1 on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.1 on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.1), 2)
+    return x.quantile(0.1)
 
 
 def q4(x):
     """Calculate the quantile 0.25
 
-    Calculate the quantile 0.25 on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.25 on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.25), 2)
+    return x.quantile(0.25)
 
 
 def q5(x):
     """Calculate the quantile 0.75
 
-    Calculate the quantile 0.75 on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.75 on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.75), 2)
+    return x.quantile(0.75)
 
 
 def q6(x):
     """Calculate the quantile 0.9
 
-    Calculate the quantile 0.9 on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.9 on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.9), 2)
+    return x.quantile(0.9)
 
 
 def q7(x):
     """Calculate the quantile 0.95
 
-    Calculate the quantile 0.95 on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.95 on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.95), 2)
+    return x.quantile(0.95)
 
 
 def q8(x):
     """Calculate the quantile 0.975
 
-    Calculate the quantile 0.975 on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.975 on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.975), 2)
+    return x.quantile(0.975)
 
 
 def med(x):
     """Calculate the quantile 0.5 (or median)
 
-    Calculate the quantile 0.5 (or median) on a specific pandas Series and return the round value to 2 digits.
+    Calculate the quantile 0.5 (or median) on a specific pandas Series
 
     :parameter x: A pandas Series of value
     :type x: pd.Series
     :return: float
     """
-    return round(x.quantile(0.5), 2)
+    return x.quantile(0.5)
 
 
-def prep_multipat_plot_comb(pathogen_information):
+def mean(x):
+    """Calculate the mean
+
+    Calculate the mean on a specific pandas Series
+
+    :parameter x: A pandas Series of value
+    :type x: pd.Series
+    :return: float
+    """
+    return x.mean()
+
+
+def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
     """Process Data for Combined Multi-pathogen plot
 
     From a dictionary containing each DataFrame associated to a specific pathogen:
@@ -329,10 +341,11 @@ def prep_multipat_plot_comb(pathogen_information):
     - `"value"`: Sum of all the "value_" columns ("value_<pathogen>" set to NA for pathogen with empty DataFrame
       (not selected))
     - Proportion of each pathogen `"proportion_<pathogen>" = "value_<pathogen>" / "value"`
-    - Calculate the median, 95%, 90%, 80%, and 50% quantiles for each "value" and "proportion" columns
+    - Calculate the median, 95%, 90%, 80%, and 50% quantiles for each "value" and "proportion" columns (and the mean
+      if `calc_mean` set to `True`)
 
     Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
-    0.95, 0.975, respectively.
+    0.95, 0.975, respectively. The median and mean are noted as "med" and "mean", respectively.
 
     The input `pathogen_information` should be in a specific format:
 
@@ -344,9 +357,11 @@ def prep_multipat_plot_comb(pathogen_information):
     :parameter pathogen_information: A dictionary containing multiple dictionary containing a DataFrame (result of
      sampling process, key: "dataframe") and named with the associated specific pathogen (keys).
     :type pathogen_information: dict
+    :parameter calc_mean: Boolean indicating if the mean should be calculated too (in addition to the other quantiles)
+    :type calc_mean: bool
     :return: A dictionary with 2 objects: (1) "all":  median, 95%, 90%, 80%, and 50% quantiles for each "value" and
-     "value_<pathogen> "columns and (2) "detail": median, 95%, 90%, 80%, and 50% quantiles for each
-     "proportion_<pathogen>" columns.
+     "value_<pathogen>-<quantile>"columns and (2) "detail": median, 95%, 90%, 80%, and 50% quantiles for each
+     "proportion_<pathogen>-<quantile>" columns.
     """
     all_sample = pd.DataFrame()
     f = {'value': [med, q1, q2, q3, q4, q5, q6, q7, q8]}
@@ -371,7 +386,10 @@ def prep_multipat_plot_comb(pathogen_information):
     for patho in pathogen_information:
         # Preparation
         pathogen_name = patho.lower()
-        f2.update({"proportion_" + pathogen_name: [med, q1, q2, q3, q4, q5, q6, q7, q8]})
+        if calc_mean is True:
+            f2.update({"proportion_" + pathogen_name: [med, mean, q1, q2, q3, q4, q5, q6, q7, q8]})
+        else:
+            f2.update({"proportion_" + pathogen_name: [med, q1, q2, q3, q4, q5, q6, q7, q8]})
         all_sample["proportion_" + pathogen_name] = all_sample["value_" + pathogen_name] / all_sample["value"]
     # Calculate the quantiles for each "value" and "proportion" columns
     all_quantile = all_sample.groupby(["target_end_date"]).agg(f)
@@ -379,4 +397,5 @@ def prep_multipat_plot_comb(pathogen_information):
     detail_quantile = all_sample.groupby(["target_end_date"]).agg(f2)
     detail_quantile.columns = (detail_quantile.columns.get_level_values(0) + "-" +
                                detail_quantile.columns.get_level_values(1))
+    print(detail_quantile)
     return {"all": all_quantile, "detail": detail_quantile}
