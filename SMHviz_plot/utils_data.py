@@ -397,5 +397,4 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
     detail_quantile = all_sample.groupby(["target_end_date"]).agg(f2)
     detail_quantile.columns = (detail_quantile.columns.get_level_values(0) + "-" +
                                detail_quantile.columns.get_level_values(1))
-    print(detail_quantile)
     return {"all": all_quantile, "detail": detail_quantile}

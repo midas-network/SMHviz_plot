@@ -1180,7 +1180,6 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
                              y=df_plot[df_plot["type_id"] == bar_calc]["proportion_" + pathogen.lower()],
                              hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>Median: %{y:,.2f}",
                              name=pathogen.title()), row=2, col=1)
-    print(quant_sel)
     # Update layout
     # Button
     title_list_pathogen = list()
