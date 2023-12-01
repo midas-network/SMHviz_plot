@@ -908,7 +908,7 @@ def add_bar_plot(fig, df_var, df_other=None, truth_data=None, df_x="target_end_d
                  truth_data_x="time_value", show_legend=True, obs_legend=True, title=None, height=1000, plot_coord=None,
                  var="Pathogen", other_var="Second Pathogen", truth_data_legend_name="Observed Data",
                  truth_data_tot_legend_name="Observed Data", theme="plotly_white", color='crimson',
-                 color_other='deepskyblue'):
+                 color_other='deepskyblue', truth_data_tot_col="total_value"):
     if plot_coord is None:
         plot_coord = [1, 1]
     if truth_data is not None:
@@ -917,8 +917,8 @@ def add_bar_plot(fig, df_var, df_other=None, truth_data=None, df_x="target_end_d
                                  marker=dict(color="black"), visible="legendonly", showlegend=obs_legend,
                                  hovertemplate=str(truth_data_legend_name) + ": %{y:,.2f}" + "<extra></extra>"),
                       row=plot_coord[0], col=plot_coord[1])
-        if "tot_value" in truth_data.columns:
-            fig.add_trace(go.Scatter(x=truth_data[truth_data_x], y=truth_data["tot_value"],
+        if truth_data_tot_col in truth_data.columns:
+            fig.add_trace(go.Scatter(x=truth_data[truth_data_x], y=truth_data[truth_data_tot_col],
                                      legendgroup="all_observed_data",
                                      name=truth_data_tot_legend_name,
                                      hovertemplate=str(truth_data_tot_legend_name) + ": %{y:,.2f}<extra></extra>",
