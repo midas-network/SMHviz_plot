@@ -1115,31 +1115,32 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     :return: a plotly.graph_objs.Figure object
     """
     # Preparation
+    low_list_pathogen = list()
     for pathogen in list_pathogen:
-        list_pathogen[list_pathogen.index(pathogen)] = list_pathogen[list_pathogen.index(pathogen)].lower()
+        low_list_pathogen.append(pathogen.lower())
     if intervals_dict is None:
         intervals_dict = {0.95: ["q1", "q8"], 0.9: ["q2", "q7"], 0.8: ["q3", "q6"], 0.5: ["q4", "q5"]}
         # Color preparation
         if color is None:
-            color = make_palette_sequential(pd.DataFrame(data={"pathogen": ["combined"] + list_pathogen}),
+            color = make_palette_sequential(pd.DataFrame(data={"pathogen": ["Combined"] + list_pathogen}),
                                             "pathogen", palette=palette)
     # Subplot
     fig = make_subplots(rows=2, cols=1, vertical_spacing=0.05, shared_xaxes=True)
 
     # Scatter plot
     scatter_df = list_df["all"]
-    col_value = ["value_" + pathogen for pathogen in list_pathogen] + ["value"]
+    col_value = ["value_" + pathogen for pathogen in low_list_pathogen] + ["value"]
     df_plot = pd.wide_to_long(scatter_df.reset_index(), col_value, j="type_id", i="target_end_date",
                               suffix="\\w+", sep="-").reset_index()
     df_plot.sort_values("target_end_date")
     if intervals is None:
         intervals = [0.95, 0.9, 0.8, 0.5]
     intervals.sort(reverse=True)
-    for j in ["combined"] + list_pathogen:
-        if j == "combined":
+    for j in ["Combined"] + list_pathogen:
+        if j == "Combined":
             col_name = ""
         else:
-            col_name = "_" + j
+            col_name = "_" + j.lower()
         for i in range(0, len(intervals)):
             if i == 0:
                 show_leg = True
@@ -1151,7 +1152,7 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
             first_hover_text = (str(
                     round(intervals[i] * 100)) + " % Interval: %{y:,.2f} - %{customdata:,.2f}<br>Epiweek: %{x|%Y-%m-%d}"
                                                  + "<extra></extra>")
-            fig = ui_ribbons(fig, df_plot, quant_sel, y_col="value" + col_name, legend_name=j.title(), color=color[j],
+            fig = ui_ribbons(fig, df_plot, quant_sel, y_col="value" + col_name, legend_name=j, color=color[j],
                              show_legend=show_leg, opacity=opacity, subplot_coord=[1, 1],
                              special_hover={"first": first_hover_text, "second": second_hover_text})
             fig.for_each_trace(
@@ -1161,17 +1162,16 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
                 lambda trace: trace.update(visible="legendonly") if trace.name != "Combined" else (),
             )
     if truth_data is not None:
-        fig = add_scatter_trace(fig, truth_data, list_pathogen[0].title() + " Observed Data", subplot_coord=[1, 1],
-                                hover_text=list_pathogen[0].title() + "<br>", color="rgba(0,0,0,1)",
-                                visible="legendonly")
+        fig = add_scatter_trace(fig, truth_data, list_pathogen[0] + " Observed Data", subplot_coord=[1, 1],
+                                hover_text=list_pathogen[0] + "<br>", color="rgba(0,0,0,1)", visible="legendonly")
         if "tot_value" in truth_data.columns:
-            fig = add_scatter_trace(fig, truth_data, " + ".join(list_pathogen).title() + "<br> Observed Data",
+            fig = add_scatter_trace(fig, truth_data, " + ".join(list_pathogen) + "<br> Observed Data",
                                     y_col="tot_value", subplot_coord=[1, 1], visible="legendonly",
-                                    hover_text=" + ".join(list_pathogen).title() + "<br>")
+                                    hover_text=" + ".join(list_pathogen) + "<br>")
     # Bar plot
     quant_sel = intervals_dict[bar_interval]
     bar_df = list_df["detail"]
-    col_value = ["proportion_" + pathogen for pathogen in list_pathogen]
+    col_value = ["proportion_" + pathogen for pathogen in low_list_pathogen]
     df_plot = pd.wide_to_long(bar_df.reset_index(), col_value, j="type_id", i="target_end_date",
                               suffix="\\w+", sep="-").reset_index()
     for pathogen in list_pathogen:
@@ -1179,12 +1179,12 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
                              showlegend=False,
                              y=df_plot[df_plot["type_id"] == bar_calc]["proportion_" + pathogen.lower()],
                              hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>Median: %{y:,.2f}",
-                             name=pathogen.title()), row=2, col=1)
+                             name=pathogen), row=2, col=1)
     # Update layout
     # Button
     title_list_pathogen = list()
     for pathogen in list_pathogen:
-        title_list_pathogen.append(pathogen.title())
+        title_list_pathogen.append(pathogen)
     vis_list = list()
     comb_list = list()
     for i in fig.data:
