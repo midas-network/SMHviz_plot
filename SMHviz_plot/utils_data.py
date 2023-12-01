@@ -380,6 +380,9 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
                 all_sample["value_" + pathogen_name] = pd.NA
         else:
             all_sample = pathogen_information[patho]["dataframe"]
+    for col in f.keys():
+        if col not in all_sample.columns:
+            all_sample[col] = pd.NA
     # Calculate sum of all pathogen
     all_sample["value"] = all_sample[[col for col in all_sample.columns if col.startswith('value_')]].sum(axis=1)
     # Calculate proportion of each pathogen
