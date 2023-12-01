@@ -1164,9 +1164,9 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     if truth_data is not None:
         fig = add_scatter_trace(fig, truth_data, list_pathogen[0] + " Observed Data", subplot_coord=[1, 1],
                                 hover_text=list_pathogen[0] + "<br>", color="rgba(0,0,0,1)", visible="legendonly")
-        if "tot_value" in truth_data.columns:
+        if "total_value" in truth_data.columns:
             fig = add_scatter_trace(fig, truth_data, " + ".join(list_pathogen) + "<br> Observed Data",
-                                    y_col="tot_value", subplot_coord=[1, 1], visible="legendonly",
+                                    y_col="total_value", subplot_coord=[1, 1], visible="legendonly",
                                     hover_text=" + ".join(list_pathogen) + "<br>")
     # Bar plot
     quant_sel = intervals_dict[bar_interval]
