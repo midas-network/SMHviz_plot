@@ -194,9 +194,10 @@ def sample_df(df, scenario, pathogen, k=1000):
         weight_sample = list()
         for model in list(df_scen["model_name"].drop_duplicates()):
             df_model = df_scen[df_scen["model_name"] == model]
+            len_df = len(df_model[(df_model["scenario_id"] == scenario[0]) &
+                                  (df_model["horizon"] == min(df_model["horizon"]))])
             list_sample.append(list(df_model["sample_id"].unique()))
-            weight_list = [1 / max(df_model.type_id.drop_duplicates())] * int(
-                len(list(df_model["sample_id"].unique())))
+            weight_list = [1 / int(len_df)] * int(len(list(df_model["sample_id"].unique())))
             weight_sample.append(weight_list)
         list_sample = flatten_list(list_sample)
         weight_sample_fin = flatten_list(weight_sample) / np.array(len(list(df_scen["model_name"].drop_duplicates())))
