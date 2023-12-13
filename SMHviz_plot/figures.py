@@ -882,11 +882,12 @@ def add_box_plot(df_var, fig, x_col="model_name", y_col="type_id", box_value=Non
 
 def make_boxplot_plot(df, show_legend=False, subplot=False, subplot_col=None, subplot_titles=None, sub_nrow=1,
                       share_x="all", share_y="all", x_col="model_name", y_col="type_id", title=None, box_value=None,
-                      height=1000, theme="plotly_white", sub_orientation="v", color_dict=None, box_orientation="h"):
+                      height=1000, theme="plotly_white", sub_orientation="v", color_dict=None, box_orientation="h",
+                      subplot_spacing=0.05):
     if subplot is True:
         sub_var = list(df[subplot_col].unique())
         fig = prep_subplot(sub_var, subplot_titles, "", "", sort=False, share_x=share_x, share_y=share_y,
-                           row_num=sub_nrow)
+                           row_num=sub_nrow, subplot_spacing=subplot_spacing)
         for var in sub_var:
             df_var = df[df[subplot_col] == var]
             if var == sub_var[0]:
