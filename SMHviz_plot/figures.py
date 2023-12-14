@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pandas as pd
 
 from SMHviz_plot.utils import *
@@ -5,7 +7,7 @@ from SMHviz_plot.utils import *
 
 def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value", width=2, connect_gaps=None,
                       mode="lines+markers", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
-                      hover_text="", visible=True):
+                      hover_text="", visible=True, dash=None):
     """ Add scatter trace to a Figure
 
     Add scatter trace on Figure object. By default, the hover text will be:
@@ -45,6 +47,9 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     :type hover_text: str
     :parameter visible: Boolean or string indicating if the trace is visible or not or "legendonly"
     :type visible: bool | str
+    :parameter dash: Option to print the line is dash, options include 'dash', 'dot', and 'dashdot'. By default, "None",
+        no dash.
+    :type dash: str | None
     :return: a plotly.graph_objs.Figure object with an added trace
     """
     if subplot_coord is None:
@@ -55,7 +60,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
                              mode=mode,
                              marker=dict(color=color),
                              legendgroup=legend_name,
-                             line=dict(width=width),
+                             line=dict(width=width, dash=dash),
                              visible=visible,
                              showlegend=show_legend,
                              hovertemplate=hover_text +
@@ -343,7 +348,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                       hover_text="", ensemble_name=None, ensemble_color=None, ensemble_view=False, line_width=2,
                       connect_gaps=True, color_dict=None, opacity=0.1, palette="turbo", title="", subtitle="",
                       height=1000, theme="plotly_white", notes=None, button=True, button_opt="all", v_lines=None,
-                      h_lines=None, zoom_in_projection=None, specs=None):
+                      h_lines=None, zoom_in_projection=None, specs=None, w_delay=None):
     """Create a Scatter Plot
 
     Create one plot for model projection output files. The function allows multiple view: adding truth data, projection
@@ -487,6 +492,9 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     :parameter specs: Parameter `specs` as in the `plotly.subplots.make_subplots()` function. See
       plotly.subplots.make_subplots()` documentation for more details. Used only for plot with subplots.
     :type specs: list | None
+    :parameter w_delay: For the truth data scatter plot, indicate a ending number of weeks to print in mode "markers"
+      only . For example, if set to `4`, the last 4 weeks of the time series will be plotted in "markers" mode.
+    :type w_delay: int | None
     :return: a plotly.graph_objs.Figure object with model projection data
     """
     # Prerequisite
@@ -527,10 +535,24 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                 show_legend = False
             if truth_facet is not None:
                 if truth_data_type is "scatter":
-                    fig_plot = add_scatter_trace(fig_plot, truth_facet, truth_legend_name, show_legend=show_legend,
+                    if w_delay is not None:
+                        plot_truth_df = truth_facet[pd.to_datetime(truth_facet[x_truth_col]) <
+                                                    (max(pd.to_datetime(truth_facet[x_truth_col])) -
+                                                     timedelta(weeks=w_delay))]
+                    else:
+                        plot_truth_df = truth_facet
+                    fig_plot = add_scatter_trace(fig_plot, plot_truth_df, truth_legend_name, show_legend=show_legend,
                                                  hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
                                                  x_col=x_truth_col, y_col=y_truth_col, width=line_width,
                                                  connect_gaps=connect_gaps, mode=truth_mode)
+                    if w_delay is not None:
+                        plot_truth_df = truth_facet[pd.to_datetime(truth_facet[x_truth_col]) >=
+                                                    (max(pd.to_datetime(truth_facet[x_truth_col])) -
+                                                     timedelta(weeks=w_delay))]
+                        fig_plot = add_scatter_trace(fig_plot, plot_truth_df, truth_legend_name,
+                                                     show_legend=False, hover_text=truth_legend_name + "<br>",
+                                                     subplot_coord=subplot_coord, x_col=x_truth_col, y_col=y_truth_col,
+                                                     width=line_width, connect_gaps=connect_gaps, mode="markers")
                 elif truth_data_type is "bar":
                     fig_plot = add_bar_trace(fig_plot, truth_facet, truth_legend_name, show_legend=show_legend,
                                              hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
@@ -562,10 +584,23 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         fig_plot = fig_plot
         if truth_data is not None:
             if truth_data_type is "scatter":
-                fig_plot = add_scatter_trace(fig_plot, truth_data, truth_legend_name,
-                                             hover_text=truth_legend_name + "<br>", x_col=x_truth_col,
-                                             y_col=y_truth_col, width=line_width,
+                if w_delay is not None:
+                    plot_truth_df = truth_data[pd.to_datetime(truth_data[x_truth_col]) <
+                                               (max(pd.to_datetime(truth_data[x_truth_col])) -
+                                                timedelta(weeks=w_delay))]
+                else:
+                    plot_truth_df = truth_data
+                fig_plot = add_scatter_trace(fig_plot, plot_truth_df, truth_legend_name, x_col=x_truth_col,
+                                             hover_text=truth_legend_name + "<br>", y_col=y_truth_col, width=line_width,
                                              connect_gaps=connect_gaps, mode=truth_mode)
+                if w_delay is not None:
+                    plot_truth_df = truth_data[pd.to_datetime(truth_data[x_truth_col]) >=
+                                               (max(pd.to_datetime(truth_data[x_truth_col])) -
+                                                timedelta(weeks=w_delay))]
+                    fig_plot = add_scatter_trace(fig_plot, plot_truth_df, truth_legend_name, y_col=y_truth_col,
+                                                 hover_text=truth_legend_name + "<br>", x_col=x_truth_col,
+                                                 width=line_width, connect_gaps=connect_gaps, mode="markers",
+                                                 show_legend=False)
             elif truth_data_type is "bar":
                 fig_plot = add_bar_trace(fig_plot, truth_data, truth_legend_name,
                                          hover_text=truth_legend_name + "<br>", x_col=x_truth_col)
