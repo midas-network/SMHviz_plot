@@ -1213,12 +1213,39 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     col_value = ["proportion_" + pathogen for pathogen in low_list_pathogen]
     df_plot = pd.wide_to_long(bar_df.reset_index(), col_value, j="type_id", i="target_end_date",
                               suffix="\\w+", sep="-").reset_index()
-    for pathogen in list_pathogen:
-        fig.add_trace(go.Bar(x=df_plot["target_end_date"], marker=dict(color=color[pathogen]),
-                             showlegend=False,
-                             y=df_plot[df_plot["type_id"] == bar_calc]["proportion_" + pathogen.lower()],
-                             hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>Median: %{y:,.2f}",
-                             name=pathogen), row=2, col=1)
+    bar_pathogen_list = list_pathogen.copy()
+    bar_pathogen_list.reverse()
+    med_point = pd.Series([1] * len(df_plot[df_plot["type_id"] == bar_calc]))
+    for pathogen in bar_pathogen_list:
+        med_val = df_plot[df_plot["type_id"] == bar_calc]["proportion_" + pathogen.lower()].reset_index(drop=True)
+        med_point = med_point.subtract(med_val)
+        fig.add_trace(go.Bar(
+            x=df_plot["target_end_date"], marker=dict(color=color[pathogen]), showlegend=False,
+            y=med_val, base=med_point, name="bar_" + pathogen), row=2, col=1)
+        if pathogen is list_pathogen[0]:
+            print(pathogen)
+            upper_bar = (
+                df_plot[df_plot["type_id"] == quant_sel[1]]["proportion_" + pathogen.lower()].reset_index(drop=True))
+            lower_bar = (
+                df_plot[df_plot["type_id"] == quant_sel[0]]["proportion_" + pathogen.lower()].reset_index(drop=True))
+            text_low_bar = round(lower_bar, 3)
+            text_up_bar = round(upper_bar, 3)
+            fig.update_traces(
+                customdata=text_low_bar.astype(str) + " - " + text_up_bar.astype(str),
+                hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>" + bar_calc.title() + " " + pathogen +
+                              ": %{y:,.3f}<br>" + str(bar_interval * 100) +
+                              "% Intervals: %{customdata}<extra></extra>",
+                error_y=dict(type="data", symmetric=False, visible=True, array=list(upper_bar.subtract(med_val)),
+                             arrayminus=list(med_val.subtract(lower_bar))),
+                selector=dict(name="bar_" + pathogen))
+        else:
+            fig.update_traces(
+                customdata=med_val,
+                hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>" + bar_calc.title() + " " + pathogen +
+                              ": %{customdata:,.3f}<br>" + bar_calc.title() + " " +
+                              " + ".join(bar_pathogen_list[bar_pathogen_list.index(pathogen):len(bar_pathogen_list) +
+                                                                                             1]) +
+                              ": %{y:,.3f}<extra></extra>", selector=dict(name="bar_" + pathogen))
     # Update layout
     # Button
     title_list_pathogen = list()
