@@ -1095,7 +1095,7 @@ def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_le
 
 def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, opacity=0.2, color=None, palette="turbo",
                                      intervals_dict=None, intervals=None, bar_interval=0.5, bar_calc="med", title=None,
-                                     y_axis_title=""):
+                                     y_axis_title="", error_bar_pat=None):
     """Create the Multi-Pathogen Combined plot
 
     The Multi-pathogen Combined Plot contains 2 subplot representing the combination of multiple pathogens trajectories
@@ -1151,9 +1151,21 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     :type title: str
     :parameter y_axis_title: Title of the first subplot, by default "".
     :type y_axis_title: str
+    :parameter error_bar_pat: Name of the pathogen to draw at the bottom of the plot with error bar in the second
+      subplot, by default `None`. If `None`, will take the first pathogen in the `list_pathogen` parameters
+    :type error_bar_pat: str | None
     :return: a plotly.graph_objs.Figure object
     """
     # Preparation
+    # Pathogen order/list
+    if error_bar_pat is None:
+        error_bar_pat = list_pathogen[0]
+    elif error_bar_pat not in list_pathogen:
+        print(error_bar_pat + " is not in `list_pathogen`. The first element of `list_pathogen` will be use instead.")
+        error_bar_pat = list_pathogen[0]
+    elif error_bar_pat != list_pathogen[0]:
+        list_pathogen.remove(error_bar_pat)
+        list_pathogen = [error_bar_pat] + list_pathogen
     low_list_pathogen = list()
     for pathogen in list_pathogen:
         low_list_pathogen.append(pathogen.lower())
@@ -1165,7 +1177,6 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
                                             "pathogen", palette=palette)
     # Subplot
     fig = make_subplots(rows=2, cols=1, vertical_spacing=0.05, shared_xaxes=True)
-
     # Scatter plot
     scatter_df = list_df["all"]
     col_value = ["value_" + pathogen for pathogen in low_list_pathogen] + ["value"]
@@ -1228,31 +1239,21 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
             df_plot[df_plot["type_id"] == quant_sel[0]]["proportion_" + pathogen.lower()].reset_index(drop=True))
         text_low_bar = round(lower_bar, 3)
         text_up_bar = round(upper_bar, 3)
-        darker_color = [int(s) for s in re.findall(r'\d+', color[pathogen])]
-        darker_color = [int(i - i * 0.35) for i in darker_color]
-        darker_color = "rgba(" + ", ".join(str(x) for x in darker_color[:-1]) + ",1)"
-        if pathogen is list_pathogen[0]:
+        if pathogen == error_bar_pat:
             fig.update_traces(
-                customdata=pd.DataFrame(data={'bar': text_low_bar.astype(str) + " - " + text_up_bar.astype(str),
-                                              'value': med_val}),
+                customdata=text_low_bar.astype(str) + " - " + text_up_bar.astype(str),
                 hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>" + bar_calc.title() + " " + pathogen +
-                              ": %{y:,.3f}<br>"
-                              + str(bar_interval * 100) +
-                              "% Intervals: %{customdata[0]}<extra></extra>",
+                              ": %{y:,.3f}<br>" + str(bar_interval * 100) + "% Intervals: %{customdata}<extra></extra>",
                 error_y=dict(type="data", symmetric=False, visible=True, array=list(upper_bar.subtract(med_val)),
-                             arrayminus=list(med_val.subtract(lower_bar)), color=darker_color),
+                             arrayminus=list(med_val.subtract(lower_bar))),
                 selector=dict(name="bar_" + pathogen))
         else:
             fig.update_traces(
-                customdata=pd.DataFrame(data={'bar': text_low_bar.astype(str) + " - " + text_up_bar.astype(str),
-                                              'value': med_val}),
+                customdata=med_val,
                 hovertemplate="Epiweek: %{x|%Y-%m-%d}<br>" + bar_calc.title() + " " + pathogen +
-                              ": %{customdata[1]:,.3f} (" + str(bar_interval * 100) + "% : %{customdata[0]})<br>" +
-                              bar_calc.title() + " " + " + ".join(bar_pathogen_list[bar_pathogen_list.index(pathogen):
-                                                                                    len(bar_pathogen_list) + 1]) +
-                              ": %{y:,.3f}<extra></extra>",
-                error_y=dict(type="data", symmetric=False, visible=True, array=list(upper_bar.subtract(med_val)),
-                             arrayminus=list(med_val.subtract(lower_bar)), color=darker_color),
+                              ": %{customdata:,.3f}<br>" + bar_calc.title() + " " +
+                              " + ".join(bar_pathogen_list[bar_pathogen_list.index(pathogen):
+                                                           len(bar_pathogen_list) + 1]) + ": %{y:,.3f}<extra></extra>",
                 selector=dict(name="bar_" + pathogen))
     # Update layout
     # Button
