@@ -536,7 +536,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
             if truth_facet is not None:
                 if truth_data_type is "scatter":
                     if w_delay is not None:
-                        plot_truth_df = truth_facet[pd.to_datetime(truth_facet[x_truth_col]) <
+                        plot_truth_df = truth_facet[pd.to_datetime(truth_facet[x_truth_col]) <=
                                                     (max(pd.to_datetime(truth_facet[x_truth_col])) -
                                                      timedelta(weeks=w_delay))]
                     else:
@@ -546,7 +546,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                                                  x_col=x_truth_col, y_col=y_truth_col, width=line_width,
                                                  connect_gaps=connect_gaps, mode=truth_mode)
                     if w_delay is not None:
-                        plot_truth_df = truth_facet[pd.to_datetime(truth_facet[x_truth_col]) >=
+                        plot_truth_df = truth_facet[pd.to_datetime(truth_facet[x_truth_col]) >
                                                     (max(pd.to_datetime(truth_facet[x_truth_col])) -
                                                      timedelta(weeks=w_delay))]
                         fig_plot = add_scatter_trace(fig_plot, plot_truth_df, truth_legend_name,
@@ -585,7 +585,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
         if truth_data is not None:
             if truth_data_type is "scatter":
                 if w_delay is not None:
-                    plot_truth_df = truth_data[pd.to_datetime(truth_data[x_truth_col]) <
+                    plot_truth_df = truth_data[pd.to_datetime(truth_data[x_truth_col]) <=
                                                (max(pd.to_datetime(truth_data[x_truth_col])) -
                                                 timedelta(weeks=w_delay))]
                 else:
@@ -594,7 +594,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                                              hover_text=truth_legend_name + "<br>", y_col=y_truth_col, width=line_width,
                                              connect_gaps=connect_gaps, mode=truth_mode)
                 if w_delay is not None:
-                    plot_truth_df = truth_data[pd.to_datetime(truth_data[x_truth_col]) >=
+                    plot_truth_df = truth_data[pd.to_datetime(truth_data[x_truth_col]) >
                                                (max(pd.to_datetime(truth_data[x_truth_col])) -
                                                 timedelta(weeks=w_delay))]
                     fig_plot = add_scatter_trace(fig_plot, plot_truth_df, truth_legend_name, y_col=y_truth_col,
