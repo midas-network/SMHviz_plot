@@ -7,7 +7,7 @@ from SMHviz_plot.utils import *
 
 def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value", width=2, connect_gaps=None,
                       mode="lines+markers", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
-                      hover_text="", visible=True, dash=None):
+                      hover_text="", line_width=0.0001, visible=True, dash=None):
     """ Add scatter trace to a Figure
 
     Add scatter trace on Figure object. By default, the hover text will be:
@@ -45,6 +45,8 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     :type subplot_coord: list | str | None
     :parameter hover_text: Appending text appearing on hover; by default, `""`
     :type hover_text: str
+    :parameter line_width: Line width of the markers
+    :type line_width: float
     :parameter visible: Boolean or string indicating if the trace is visible or not or "legendonly"
     :type visible: bool | str
     :parameter dash: Option to print the line is dash, options include 'dash', 'dot', and 'dashdot'. By default, "None",
@@ -58,7 +60,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
                              y=data[y_col],
                              name=legend_name,
                              mode=mode,
-                             marker=dict(color=color),
+                             marker=dict(color=color, line_width=line_width),
                              legendgroup=legend_name,
                              line=dict(width=width, dash=dash),
                              visible=visible,
@@ -552,7 +554,8 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                         fig_plot = add_scatter_trace(fig_plot, plot_truth_df, truth_legend_name,
                                                      show_legend=False, hover_text=truth_legend_name + "<br>",
                                                      subplot_coord=subplot_coord, x_col=x_truth_col, y_col=y_truth_col,
-                                                     width=line_width, connect_gaps=connect_gaps, mode="markers")
+                                                     width=line_width, connect_gaps=connect_gaps, mode="markers",
+                                                     color="rgb(200, 200, 200)", line_width=0.5)
                 elif truth_data_type is "bar":
                     fig_plot = add_bar_trace(fig_plot, truth_facet, truth_legend_name, show_legend=show_legend,
                                              hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
@@ -600,7 +603,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                     fig_plot = add_scatter_trace(fig_plot, plot_truth_df, truth_legend_name, y_col=y_truth_col,
                                                  hover_text=truth_legend_name + "<br>", x_col=x_truth_col,
                                                  width=line_width, connect_gaps=connect_gaps, mode="markers",
-                                                 show_legend=False)
+                                                 color="rgb(200, 200, 200)", show_legend=False, line_width=0.5)
             elif truth_data_type is "bar":
                 fig_plot = add_bar_trace(fig_plot, truth_data, truth_legend_name,
                                          hover_text=truth_legend_name + "<br>", x_col=x_truth_col)
