@@ -5,7 +5,7 @@ from plotly.subplots import make_subplots
 
 
 def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, subplot_spacing=0.05, share_x="all",
-                 share_y="all", row_num=None):
+                 share_y="all", row_num=None, specs=None):
     """ Prepare Plotly subplot object
 
     Prepared a Plotly Figure object with predefined subplots information:
@@ -37,6 +37,9 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     :parameter row_num: If `row_num` is not None, force a number of rows in the output subplots; the number of column
         is automatically calculated with the length of `sub_var` parameter (`round((len(sub_var) / row_num) + 0.4)`)
     :type row_num: int
+    :parameter specs: Parameter `specs` as in the `plotly.subplots.make_subplots()` function. See
+      plotly.subplots.make_subplots()` documentation for more details.
+    :type specs: list | None
     :return: a Plotly subplots object; `plotly.graph_objs.Figure` with predefined subplots configured in 'layout
     """
     # Sort value
@@ -59,7 +62,7 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     # Subplots
     fig = make_subplots(rows=int(row_num), cols=int(col_num), subplot_titles=sub_title, shared_yaxes=share_y,
                         shared_xaxes=share_x, vertical_spacing=subplot_spacing, horizontal_spacing=subplot_spacing,
-                        x_title=x_title, y_title=y_title)
+                        x_title=x_title, y_title=y_title, specs=specs)
     fig.update_annotations(font_size=font_size)
     return fig
 
