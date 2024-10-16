@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+import numpy as np
+
 import pandas as pd
 
 from SMHviz_plot.utils import *
@@ -1038,6 +1040,7 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
     else:
         df_med = None
     for leg in df[legend_col].drop_duplicates():
+        # df_plot contains all data for a given model
         df_plot = df[df[legend_col] == leg].drop(legend_col, axis=1)
         if legend_dict is None:
             legend_name = leg
@@ -1045,23 +1048,42 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
         else:
             legend_name = legend_dict[leg]
             col_line = color_line_trace(color_dict, legend_name)
-        for i in df_plot[spag_col].drop_duplicates():
-            df_plot_i = df_plot[df_plot[spag_col] == i]
-            df_plot_i = df_plot_i.sort_values("target_end_date")
-            if i == list(df_plot[spag_col].drop_duplicates())[0]:
-                show_legend_i = show_legend
-            else:
-                show_legend_i = False
-            add_scatter_trace(fig, df_plot_i, legend_name, x_col="target_end_date", show_legend=show_legend_i,
-                              mode="lines", subplot_coord=subplot_coord,
-                              hover_text=hover_text + spag_col.title() + ": " + str(int(i)) + "<br>",
-                              color=re.sub(", 1\)", ", " + str(opacity) + ")", col_line[0]))
+        # Prepare df with all trajectories in a model, separated by null rows (which break up trajectories into different lines)
+        temp = pd.DataFrame()
+        traj_list = list(df_plot['type_id'].unique())
+        temp.loc[:, 'value'] = [np.nan] * len(traj_list)
+        temp.loc[:, 'type_id'] = traj_list
+        temp.loc[:, 'target_end_date'] = [pd.NaT] * len(traj_list)
+        all_traj_df = pd.concat([df_plot, temp], axis=0)
+        all_traj_df = all_traj_df.sort_values(['type_id', 'target_end_date'])
+
+        # Add single trace
+        connect_gaps = None
+        color = re.sub(", 1\)", ", " + str(opacity) + ")", col_line[0])
+        fig.add_trace(go.Scatter(x=all_traj_df['target_end_date'],
+                                 y=all_traj_df['value'],
+                                 name=legend_name,
+                                 mode='lines',
+                                 marker=dict(color=color, line_width=0.0001),
+                                 legendgroup=legend_name,
+                                 line=dict(width=2, dash=None),
+                                 visible=True,
+                                 showlegend=show_legend,
+                                 hovertemplate=hover_text + f"Model: {legend_name}<br>"
+                                               "Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
+                                                ),
+                      row=subplot_coord[0], col=subplot_coord[1])
+        if connect_gaps is not None:
+          fig.update_traces(connectgaps=connect_gaps)
         if add_median is True and df_med is not None:
             df_plot_med = df_med[df_med[legend_col] == leg]
             add_scatter_trace(fig, df_plot_med, legend_name, x_col="target_end_date", show_legend=False,
                               mode="lines", subplot_coord=subplot_coord, width=4,
                               hover_text=hover_text + spag_col.title() + ": Median <br>", color=col_line[0])
+
+
     return fig
+
 
 
 def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_legend=True, hover_text="", opacity=0.3,
