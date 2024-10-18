@@ -1056,6 +1056,8 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
         temp.loc[:, 'target_end_date'] = [pd.NaT] * len(traj_list)
         all_traj_df = pd.concat([df_plot, temp], axis=0)
         all_traj_df = all_traj_df.sort_values(['type_id', 'target_end_date'])
+        # Once Nan's are inserted between typeIDs, insert Nan in type ID col so hover text renders correctly
+        all_traj_df.loc[pd.isna(all_traj_df['value']), 'type_id'] = np.nan
 
         # Add single trace
         connect_gaps = None
@@ -1069,7 +1071,9 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
                                  line=dict(width=2, dash=None),
                                  visible=True,
                                  showlegend=show_legend,
+                                 customdata=all_traj_df['type_id'],
                                  hovertemplate=hover_text + f"Model: {legend_name}<br>"
+                                               "Type ID: %{customdata}<br>"
                                                "Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
                                                 ),
                       row=subplot_coord[0], col=subplot_coord[1])
