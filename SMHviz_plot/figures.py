@@ -1060,7 +1060,6 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
         all_traj_df.loc[pd.isna(all_traj_df['value']), 'type_id'] = np.nan
 
         # Add single trace
-        connect_gaps = None
         color = re.sub(", 1\)", ", " + str(opacity) + ")", col_line[0])
         fig.add_trace(go.Scatter(x=all_traj_df['target_end_date'],
                                  y=all_traj_df['value'],
@@ -1077,8 +1076,6 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
                                                "Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
                                                 ),
                       row=subplot_coord[0], col=subplot_coord[1])
-        if connect_gaps is not None:
-          fig.update_traces(connectgaps=connect_gaps)
         if add_median is True and df_med is not None:
             df_plot_med = df_med[df_med[legend_col] == leg]
             add_scatter_trace(fig, df_plot_med, legend_name, x_col="target_end_date", show_legend=False,
