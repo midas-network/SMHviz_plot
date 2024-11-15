@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+import numpy as np
 import pandas as pd
 
 from SMHviz_plot.utils import *
@@ -7,7 +8,7 @@ from SMHviz_plot.utils import *
 
 def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value", width=2, connect_gaps=None,
                       mode="lines+markers", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
-                      hover_text="", line_width=0.0001, visible=True, dash=None):
+                      hover_text="", line_width=0.0001, visible=True, dash=None, custom_data=None):
     """ Add scatter trace to a Figure
 
     Add scatter trace on Figure object. By default, the hover text will be:
@@ -52,6 +53,8 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     :parameter dash: Option to print the line is dash, options include 'dash', 'dot', and 'dashdot'. By default, "None",
         no dash.
     :type dash: str | None
+    :parameter custom_data: Add custom data
+    :type dash: str | None | pandas.DataFrame
     :return: a plotly.graph_objs.Figure object with an added trace
     """
     if subplot_coord is None:
@@ -65,6 +68,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
                              line=dict(width=width, dash=dash),
                              visible=visible,
                              showlegend=show_legend,
+                             customdata=custom_data,
                              hovertemplate=hover_text +
                              "Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"),
                   row=subplot_coord[0], col=subplot_coord[1])
@@ -1038,6 +1042,7 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
     else:
         df_med = None
     for leg in df[legend_col].drop_duplicates():
+        # df_plot contains all data for a given model
         df_plot = df[df[legend_col] == leg].drop(legend_col, axis=1)
         if legend_dict is None:
             legend_name = leg
@@ -1045,17 +1050,24 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
         else:
             legend_name = legend_dict[leg]
             col_line = color_line_trace(color_dict, legend_name)
-        for i in df_plot[spag_col].drop_duplicates():
-            df_plot_i = df_plot[df_plot[spag_col] == i]
-            df_plot_i = df_plot_i.sort_values("target_end_date")
-            if i == list(df_plot[spag_col].drop_duplicates())[0]:
-                show_legend_i = show_legend
-            else:
-                show_legend_i = False
-            add_scatter_trace(fig, df_plot_i, legend_name, x_col="target_end_date", show_legend=show_legend_i,
-                              mode="lines", subplot_coord=subplot_coord,
-                              hover_text=hover_text + spag_col.title() + ": " + str(int(i)) + "<br>",
-                              color=re.sub(", 1\)", ", " + str(opacity) + ")", col_line[0]))
+        # Prepare df with all trajectories in a model, separated by null rows
+        # (which break up trajectories into different lines)
+        temp = pd.DataFrame()
+        traj_list = list(df_plot['type_id'].unique())
+        temp.loc[:, 'value'] = [np.nan] * len(traj_list)
+        temp.loc[:, 'type_id'] = traj_list
+        temp.loc[:, 'target_end_date'] = [pd.NaT] * len(traj_list)
+        all_traj_df = pd.concat([df_plot, temp], axis=0)
+        all_traj_df = all_traj_df.sort_values(['type_id', 'target_end_date'])
+        # Once Nan's are inserted between typeIDs, insert Nan in type ID col so hover text renders correctly
+        all_traj_df.loc[pd.isna(all_traj_df['value']), 'type_id'] = np.nan
+
+        # Add single trace
+        color = re.sub(", 1\)", ", " + str(opacity) + ")", col_line[0])
+        fig = add_scatter_trace(fig, all_traj_df, legend_name, x_col="target_end_date", mode="lines", color=color,
+                                show_legend=show_legend, subplot_coord=subplot_coord,
+                                custom_data=all_traj_df['type_id'],
+                                hover_text=hover_text + "Model: " + legend_name + "<br>Type ID: %{customdata}<br>")
         if add_median is True and df_med is not None:
             df_plot_med = df_med[df_med[legend_col] == leg]
             add_scatter_trace(fig, df_plot_med, legend_name, x_col="target_end_date", show_legend=False,
