@@ -18,7 +18,7 @@ location_col = 'location'
 N = 50
 j = 3
 
-# Only show trajectories with band depths above this percent
+# Show envelope around trajectories with band depth greater than X%
 band_depth_limit = 0.5
 
 
@@ -1105,7 +1105,7 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
     else:
         df_med = None
     for leg in df[legend_col].drop_duplicates():
-        # df_plot contains all data for a given model
+        # df_plot contains all data for a given model (and scenario and age group)
         df_plot = df[df[legend_col] == leg].drop(legend_col, axis=1)
         if legend_dict is None:
             legend_name = leg
@@ -1113,13 +1113,6 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
         else:
             legend_name = legend_dict[leg]
             col_line = color_line_trace(color_dict, legend_name)
-
-        # Only show trajectories with band depths above X%
-        band_depth_df = generate_band_depth_df(df_plot)
-        median_band_depth =  band_depth_df.quantile(q=band_depth_limit, axis=0, interpolation='nearest')[1]
-        type_ids_above_bd_median = band_depth_df.loc[band_depth_df['band_depth'] >= median_band_depth, 'type_id']
-        df_plot = df_plot.loc[df['type_id'].isin(list(type_ids_above_bd_median)), :]
-
         # Prepare df with all trajectories in a model, separated by null rows (which break up trajectories into different lines)
         temp = pd.DataFrame()
         traj_list = list(df_plot['type_id'].unique())
@@ -1161,6 +1154,42 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
                               mode="lines", subplot_coord=subplot_coord, width=4,
                               hover_text=hover_text + spag_col.title() + ": Median <br>", color=col_line[0])
 
+        # Add shaded region for trajectories with top X% of band depths
+        band_depth_filtered =  band_depth_df.quantile(q=band_depth_limit, axis=0, interpolation='nearest')[1]
+        df_top_x_pctile = all_traj_df.loc[all_traj_df['band_depth'] >= band_depth_filtered, :]
+        # shade region
+        min_top_x_envelope = df_top_x_pctile.groupby('target_end_date')['value'].agg(
+          'min').reset_index()
+        max_top_x_envelope = df_top_x_pctile.groupby('target_end_date')['value'].agg(
+          'max').reset_index()
+
+        # Add trace for min
+        fig.add_trace(go.Scatter(x=min_top_x_envelope['target_end_date'],
+                                 y=min_top_x_envelope['value'],
+                                name=legend_name,
+                                mode='lines',
+                                legendgroup=legend_name,
+                                marker=dict(color=color, line_width=0.0001),
+                                line=dict(width=2, dash=None),
+                                visible=True,
+                                showlegend=False,
+                      ),
+                      row=subplot_coord[0], col=subplot_coord[1])
+        # Add trace for max
+        fig.add_trace(go.Scatter(x=max_top_x_envelope['target_end_date'],
+                                 y=max_top_x_envelope['value'],
+                                 name=legend_name,
+                                 mode='lines',
+                                 legendgroup=legend_name,
+                                 marker=dict(color=color, line_width=0.0001),
+                                 line=dict(width=2, dash=None),
+                                 visible=True,
+                                 fill='tonexty',
+                                 showlegend=False,
+                      ),
+                      row=subplot_coord[0], col=subplot_coord[1])
+    if connect_gaps is not None:
+      fig.update_traces(connectgaps=connect_gaps)
 
     return fig
 
