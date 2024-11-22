@@ -1,14 +1,80 @@
 from datetime import timedelta
 
 import numpy as np
+
 import pandas as pd
 
 from SMHviz_plot.utils import *
 
+# Constants
+scenario_col = 'scenario_id'
+model_col = 'model_name'
+age_group_col = 'age_group'
+traj_col = 'type_id'
+date_col = 'target_end_date'
+location_col = 'location'
+
+# Set N (# bands to test) and j (# functions that form a band)
+N = 50
+j = 3
+
+# Only show trajectories with band depths above this percent
+band_depth_limit = 0.5
+
+
+def generate_bands_constraints_df(band_list, date_list, all_traj_df_filtered_to_scenario_model_age_group):
+    c_df = pd.DataFrame({date_col: date_list})
+    for b in band_list:
+        # b represents tuple of trajectories (type_ids)
+        # Filter to only those type IDs
+        b_df = all_traj_df_filtered_to_scenario_model_age_group.loc[all_traj_df_filtered_to_scenario_model_age_group[traj_col].isin(b), :]
+        # Groupby date and get min/max in the value col
+        b_df = b_df.groupby(date_col).agg(min=('value', 'min'), max=('value', 'max')).reset_index()
+        b_df = b_df.rename(columns={'min': f'min_{b}', 'max': f'max_{b}'})
+
+        # Add these columns to c_df
+        c_df = c_df.merge(b_df, how='left', on=date_col)
+
+    return c_df
+
+
+def generate_band_depth_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    :param df: dataframe for all trajectory data for a given round/target/location (given by file loaded) + scenario/model/age group (filtered in df)
+    :returns 2-col df of trajectories + band depths
+    """
+    # Select bands to test for inclusion
+    traj_list = list(df[traj_col].unique())
+    # TODO Check how many times each trajectory appears. If less than unique num of dates, remove from list
+    # TODO Check that functions from all chosen bands have at least 2 values for every date.
+    #  If not, won't be able to get bounds of the band and must choose a different one
+    selected_bands = []
+    for i in range(N):
+        band = np.random.choice(a=traj_list, size=j, replace=False)
+        selected_bands.append(band)
+
+    # Get large dataframe with min and a max by epiweek for each band
+    dates = sorted(list(df[date_col].unique()))
+    bands_constraints_df = generate_bands_constraints_df(selected_bands, dates, df)
+
+    # Merge in constraints
+    df = df.merge(bands_constraints_df, how='left', on=date_col)
+    # Determine inclusion in band at each epiweek
+    for b in selected_bands:
+        df[f'in_band_{b}'] = df.apply(lambda x: (x['value'] >= x[f'min_{b}']) & (x['value'] <= x[f'max_{b}']), axis=1)
+        df = df.drop(columns=[f'min_{b}', f'max_{b}'])
+    df = df.drop(columns=['value', date_col])
+    # Per trajectory, get band depth
+    df = df.groupby(traj_col).apply(lambda x: x.sum()/len(x)).drop(columns=[traj_col])
+    df['band_depth'] = df.apply(lambda x: x.mean(), axis=1)
+    df = df.reset_index()[[traj_col, 'band_depth']]
+
+    return df
+
 
 def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value", width=2, connect_gaps=None,
                       mode="lines+markers", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
-                      hover_text="", line_width=0.0001, visible=True, dash=None, custom_data=None):
+                      hover_text="", line_width=0.0001, visible=True, dash=None):
     """ Add scatter trace to a Figure
 
     Add scatter trace on Figure object. By default, the hover text will be:
@@ -53,8 +119,6 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     :parameter dash: Option to print the line is dash, options include 'dash', 'dot', and 'dashdot'. By default, "None",
         no dash.
     :type dash: str | None
-    :parameter custom_data: Add custom data
-    :type dash: str | None | pandas.DataFrame
     :return: a plotly.graph_objs.Figure object with an added trace
     """
     if subplot_coord is None:
@@ -68,7 +132,6 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
                              line=dict(width=width, dash=dash),
                              visible=visible,
                              showlegend=show_legend,
-                             customdata=custom_data,
                              hovertemplate=hover_text +
                              "Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"),
                   row=subplot_coord[0], col=subplot_coord[1])
@@ -1050,8 +1113,14 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
         else:
             legend_name = legend_dict[leg]
             col_line = color_line_trace(color_dict, legend_name)
-        # Prepare df with all trajectories in a model, separated by null rows
-        # (which break up trajectories into different lines)
+
+        # Only show trajectories with band depths above X%
+        band_depth_df = generate_band_depth_df(df_plot)
+        median_band_depth =  band_depth_df.quantile(q=band_depth_limit, axis=0, interpolation='nearest')[1]
+        type_ids_above_bd_median = band_depth_df.loc[band_depth_df['band_depth'] >= median_band_depth, 'type_id']
+        df_plot = df_plot.loc[df['type_id'].isin(list(type_ids_above_bd_median)), :]
+
+        # Prepare df with all trajectories in a model, separated by null rows (which break up trajectories into different lines)
         temp = pd.DataFrame()
         traj_list = list(df_plot['type_id'].unique())
         temp.loc[:, 'value'] = [np.nan] * len(traj_list)
@@ -1061,19 +1130,40 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
         all_traj_df = all_traj_df.sort_values(['type_id', 'target_end_date'])
         # Once Nan's are inserted between typeIDs, insert Nan in type ID col so hover text renders correctly
         all_traj_df.loc[pd.isna(all_traj_df['value']), 'type_id'] = np.nan
+        band_depth_df = generate_band_depth_df(df_plot)
+        all_traj_df = all_traj_df.merge(band_depth_df, how='left', on='type_id')
 
         # Add single trace
+        connect_gaps = None
         color = re.sub(", 1\)", ", " + str(opacity) + ")", col_line[0])
-        fig = add_scatter_trace(fig, all_traj_df, legend_name, x_col="target_end_date", mode="lines", color=color,
-                                show_legend=show_legend, subplot_coord=subplot_coord,
-                                custom_data=all_traj_df['type_id'],
-                                hover_text=hover_text + "Model: " + legend_name + "<br>Type ID: %{customdata}<br>")
+        fig.add_trace(go.Scatter(x=all_traj_df['target_end_date'],
+                                 y=all_traj_df['value'],
+                                 name=legend_name,
+                                 mode='lines',
+                                 marker=dict(color=color, line_width=0.0001),
+                                 legendgroup=legend_name,
+                                 line=dict(width=2, dash=None),
+                                 visible=True,
+                                 showlegend=show_legend,
+                                 customdata=all_traj_df['type_id'],
+                                 text=all_traj_df['band_depth'],
+                                 hovertemplate=hover_text + f"Model: {legend_name}<br>"
+                                               "Type ID: %{customdata}<br>"
+                                                "Modified band depth: %{text:.2%}<br>"
+                                               "Value: %{y:,.2f}<br>Epiweek: %{x|%Y-%m-%d}<extra></extra>"
+                                                ),
+                      row=subplot_coord[0], col=subplot_coord[1])
+        if connect_gaps is not None:
+          fig.update_traces(connectgaps=connect_gaps)
         if add_median is True and df_med is not None:
             df_plot_med = df_med[df_med[legend_col] == leg]
             add_scatter_trace(fig, df_plot_med, legend_name, x_col="target_end_date", show_legend=False,
                               mode="lines", subplot_coord=subplot_coord, width=4,
                               hover_text=hover_text + spag_col.title() + ": Median <br>", color=col_line[0])
+
+
     return fig
+
 
 
 def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_legend=True, hover_text="", opacity=0.3,
