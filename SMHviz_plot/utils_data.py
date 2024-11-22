@@ -206,7 +206,9 @@ def sample_df(df, scenario, pathogen, k=1000):
         all_sample_sel = list(np.random.permutation(all_sample_sel))
         df_sample_sel = df_scen.reset_index().set_index("sample_id").loc[all_sample_sel]
         all_sample = df_sample_sel.reset_index().drop(columns="index")
-        all_sample["sample_id_n"] = list(np.repeat(list(range(k)), len(df_scen['horizon'].drop_duplicates())))
+
+        all_sample["sample_id_n"] = np.repeat(np.arange(k), len(df_scen['horizon'].drop_duplicates()))
+
         all_sample = all_sample[["value", "target_end_date", "sample_id_n"]]
         all_sample = all_sample.rename(columns={"value": "value" + "_" + pathogen})
     else:
@@ -223,7 +225,7 @@ def q1(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.025)
+    return np.quantile(x, 0.025)
 
 
 def q2(x):
@@ -235,7 +237,7 @@ def q2(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.05)
+    return np.quantile(x, 0.05)
 
 
 def q3(x):
@@ -247,7 +249,7 @@ def q3(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.1)
+    return np.quantile(x, 0.1)
 
 
 def q4(x):
@@ -259,7 +261,7 @@ def q4(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.25)
+    return np.quantile(x, 0.25)
 
 
 def q5(x):
@@ -271,7 +273,7 @@ def q5(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.75)
+    return np.quantile(x, 0.75)
 
 
 def q6(x):
@@ -283,7 +285,7 @@ def q6(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.9)
+    return np.quantile(x, 0.9)
 
 
 def q7(x):
@@ -295,7 +297,7 @@ def q7(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.95)
+    return np.quantile(x, 0.95)
 
 
 def q8(x):
@@ -307,7 +309,7 @@ def q8(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.975)
+    return np.quantile(x, 0.975)
 
 
 def med(x):
@@ -319,7 +321,7 @@ def med(x):
     :type x: pd.Series
     :return: float
     """
-    return x.quantile(0.5)
+    return np.quantile(x, 0.5)
 
 
 def mean(x):
@@ -391,9 +393,9 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
         # Preparation
         pathogen_name = patho.lower()
         if calc_mean is True:
-            f2.update({"proportion_" + pathogen_name: [med, mean, q1, q2, q3, q4, q5, q6, q7, q8]})
+            f2.update({"proportion_" + pathogen_name: [mean, q4, q5]})
         else:
-            f2.update({"proportion_" + pathogen_name: [med, q1, q2, q3, q4, q5, q6, q7, q8]})
+            f2.update({"proportion_" + pathogen_name: [q4, q5]})
         all_sample["proportion_" + pathogen_name] = all_sample["value_" + pathogen_name] / all_sample["value"]
     # Calculate the quantiles for each "value" and "proportion" columns
     all_quantile = all_sample.groupby(["target_end_date"]).agg(f)
