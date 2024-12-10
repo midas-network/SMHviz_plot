@@ -13,7 +13,7 @@ The release process follow a general workflow:
 
 1. Iterate on small bug fixes and PRs on branches:
    - merging into `main` once ready to publish/deploy
-   - merging into a development branch for ongoing test/process
+   - merging into a development branch (here called `dev`) for ongoing test/process
 2. When ready to release on `main`: bump the version, add an annotated git tag, and release
 3. Bump the version in main back to a development version
  
@@ -52,7 +52,7 @@ that are not yet ready to be released.
 
 [] Create new branch from `main` (or `master`, or branch of interest) called `"<author initial>/<feature>/<issue>"`
 
-[] Update `NEWS.md` accordingly
+[] Update `Changelog.md` accordingly
 
 [] Commit, push
 
@@ -67,7 +67,7 @@ that are not yet ready to be released.
 
 [] Create new branch from `main` (or `master`) called `"<author>/release/X.Y.Z"`
 
-[] Update `DESCRIPTION` and `NEWS.md` accordingly
+[] Update `pyproject.toml` and `Changelog.md` accordingly
 
 [] Commit, push
 
@@ -96,7 +96,7 @@ usethis::use_github_release()
 
 [] Set project to dev version (can be done using R, for example): 
 	- adding `.9000` to the version number
-	-  adding new heading to `NEWS.md` (`## <package name> (development)`)
+	-  adding new heading to `Changelog.md` (`## <package name> (development)`)
  
 ```r
 usethis::use_dev_version()
@@ -111,7 +111,7 @@ usethis::use_dev_version()
 
 [] Create new branch from `main` (or `master`, or branch of interest) called `"<author initial>/<feature>/<issue>"`
 
-[] Update `NEWS.md` accordingly
+[] Update `Changelog.md` accordingly
 
 [] Commit, push
 
@@ -135,7 +135,7 @@ git switch -c <author>/hotfix/<issue>
 
 [] Open Pull-Request (PR) 
 
-[] Update `NEWS.md` accordingly and bump the patch version in `DESCRIPTION`
+[] Update `Changelog.md` accordingly and bump the patch version in `pyproject.toml`
 
 ```
 git commit -m 'bump version to X.Y.Z+1'
