@@ -419,7 +419,7 @@ def generate_bands_constraints_df(band_list, date_list, all_traj_df_filtered_to_
     return c_df
 
 
-def generate_band_depth_df(df: pd.DataFrame, N=5, j=3) -> pd.DataFrame:
+def generate_band_depth_df(df: pd.DataFrame, N=50, j=3) -> pd.DataFrame:
     """
     :param df: dataframe for all trajectory data for a given round/target/location (given by file loaded) + scenario/model/age group (filtered in df)
     :param N: number of bands to test for inclusion (for a given trajectory)
