@@ -52,7 +52,7 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     :parameter dash: Option to print the line is dash, options include 'dash', 'dot', and 'dashdot'. By default, "None",
         no dash.
     :type dash: str | None
-    :parameter custom_data: Add custom data
+    :parameter custom_data: Add custom data, which can be referenced in the hover text
     :type dash: str | None | pandas.DataFrame
     :return: a plotly.graph_objs.Figure object with an added trace
     """
@@ -1081,7 +1081,10 @@ def add_spaghetti_plot_envelope(fig, df, color_dict, band_depth_limit, legend_di
                                 hover_text="", opacity=0.3,
                                 subplot_coord=None, add_median=False, median=0.5):
     """
-    :param band_depth_limit: Show envelope around trajectories with band depth greater than X%
+    :param band_depth_limit: if not None, must be a float X between 0 and 1 where the plot will
+                             show envelope around trajectories with band depth greater than X%.
+                             Band depth is a measure of the representativeness of one trajectory among an ensemble.
+                             For more details, see https://ieeexplore.ieee.org/document/6875964 - Curve Boxplot: Generalization of Boxplot for Ensembles of Curves by Mirzargar et al.
     """
 
     if add_median is True:
@@ -1192,7 +1195,9 @@ def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_le
                         add_median=False, legend_dict=None, band_depth_limit=None):
     """
     :param band_depth_limit: if not None, must be a float X between 0 and 1 where the plot will
-                             show envelope around trajectories with band depth greater than X%
+                             show envelope around trajectories with band depth greater than X%.
+                             Band depth is a measure of the representativeness of one trajectory among an ensemble.
+                             For more details, see https://ieeexplore.ieee.org/document/6875964 - Curve Boxplot: Generalization of Boxplot for Ensembles of Curves by Mirzargar et al.
     """
 
     # Colorscale
