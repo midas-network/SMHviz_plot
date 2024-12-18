@@ -2,7 +2,6 @@ from datetime import timedelta
 import pandas as pd
 
 from SMHviz_plot.utils import *
-from utils_data import *
 
 
 def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value", width=2, connect_gaps=None,
