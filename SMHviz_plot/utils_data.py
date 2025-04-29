@@ -402,3 +402,56 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
     detail_quantile.columns = (detail_quantile.columns.get_level_values(0) + "-" +
                                detail_quantile.columns.get_level_values(1))
     return {"all": all_quantile, "detail": detail_quantile}
+
+def generate_bands_constraints_df(band_list, date_list, all_traj_df_filtered_to_scenario_model_age_group):
+    c_df = pd.DataFrame({'target_end_date': date_list})
+    for b in band_list:
+        # b represents tuple of trajectories (type_ids)
+        # Filter to only those type IDs
+        b_df = all_traj_df_filtered_to_scenario_model_age_group.loc[all_traj_df_filtered_to_scenario_model_age_group['type_id'].isin(b), :]
+        # Groupby date and get min/max in the value col
+        b_df = b_df.groupby('target_end_date').agg(min=('value', 'min'), max=('value', 'max')).reset_index()
+        b_df = b_df.rename(columns={'min': f'min_{b}', 'max': f'max_{b}'})
+
+        # Add these columns to c_df
+        c_df = c_df.merge(b_df, how='left', on='target_end_date')
+
+    return c_df
+
+
+def generate_band_depth_df(df: pd.DataFrame, N=10, j=3) -> pd.DataFrame:
+    """
+    :param df: dataframe for all trajectory data for a given round/target/location (given by file loaded) + scenario/model/age group (filtered in df)
+    :param N: number of bands to test for inclusion (for a given trajectory)
+    :param j: number of randomly sampled trajectories that form a band
+    :returns 2-col df of trajectories + band depths
+    """
+    # Select bands to test for inclusion
+    traj_list = list(df['type_id'].unique())
+    # As an additional quality check, would be good to remove trajectories missing any dates
+    # I.e. check how many times each trajectory appears. If less than unique num of dates, remove from list
+
+    selected_bands = []
+    for i in range(N):
+        band = np.random.choice(a=traj_list, size=j, replace=False)
+        selected_bands.append(band)
+    # Additional check: Check that functions from all chosen bands have at least 2 values for every date.
+    #  If not, won't be able to get bounds of the band and must choose a different one
+
+    # Get large dataframe with min and a max by epiweek for each band
+    dates = sorted(list(df['target_end_date'].unique()))
+    bands_constraints_df = generate_bands_constraints_df(selected_bands, dates, df)
+
+    # Merge in constraints
+    df = df.merge(bands_constraints_df, how='left', on='target_end_date')
+    # Determine inclusion in band at each epiweek
+    for b in selected_bands:
+        df[f'in_band_{b}'] = df.apply(lambda x: (x['value'] >= x[f'min_{b}']) & (x['value'] <= x[f'max_{b}']), axis=1)
+        df = df.drop(columns=[f'min_{b}', f'max_{b}'])
+    df = df.drop(columns=['value', 'target_end_date'])
+    # Per trajectory, get band depth
+    df = df.groupby('type_id').apply(lambda x: x.sum()/len(x)).drop(columns=['type_id'])
+    df['band_depth'] = df.apply(lambda x: x.mean(), axis=1)
+    df = df.reset_index()[['type_id', 'band_depth']]
+
+    return df
