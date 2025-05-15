@@ -1,11 +1,12 @@
 import re
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
 def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, subplot_spacing=0.05, share_x="all",
-                 share_y="all", row_num=None, specs=None):
+                 share_y="all", row_num=None, specs=None, subvar_name=None):
     """ Prepare Plotly subplot object
 
     Prepared a Plotly Figure object with predefined subplots information:
@@ -45,20 +46,24 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     # Sort value
     if sort is True:
         sub_var.sort()
+    # If grid spec adapt the number
+    len_sub_var = len(sub_var)
+    if specs is not None:
+        len_sub_var = len(sum(specs, []))
     # Row and Columns information
     if row_num is None:
-        if len(sub_var) > 2:
+        if len_sub_var > 2:
             col_num = 2
-            if len(sub_var) % 2 == 0:
-                row_num = len(sub_var) / 2
+            if len_sub_var % 2 == 0:
+                row_num = len_sub_var / 2
             else:
-                row_num = (len(sub_var) + 1) / 2
+                row_num = (len_sub_var + 1) / 2
         else:
             row_num = 1
-            col_num = len(sub_var)
+            col_num = len_sub_var
     else:
         row_num = row_num
-        col_num = round((len(sub_var) / row_num) + 0.4)
+        col_num = round((len_sub_var / row_num) + 0.4)
     # Subplots
     fig = make_subplots(rows=int(row_num), cols=int(col_num), subplot_titles=sub_title, shared_yaxes=share_y,
                         shared_xaxes=share_x, vertical_spacing=subplot_spacing, horizontal_spacing=subplot_spacing,
@@ -67,7 +72,7 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     return fig
 
 
-def subplot_row_col(sub_var, var, orientation=None):
+def subplot_row_col(sub_var, var, orientation=None, specs=None):
     """ Returns row and column information
 
     For a subplots Figure, returns the associated row and column information for a specific value for an object
@@ -81,10 +86,16 @@ def subplot_row_col(sub_var, var, orientation=None):
     :type var: str | float | int
     :parameter orientation: string to indicate the subplots are either in 1 column ("v") or 1 row ("h")
     :type orientation: str
+    :parameter specs: Parameter `specs` as in the `plotly.subplots.make_subplots()` function. See
+      plotly.subplots.make_subplots()` documentation for more details.
+    :type specs: list | None
     :return: a list with 2 values: [row number, column number] in the subplots
     """
     if orientation is None:
         scen_order_dict = dict(zip(sub_var, list(range(len(sub_var)))))
+        if specs is not None:
+            if None in sum(specs, [])[:scen_order_dict[var] + 1]:
+                scen_order_dict[var] = scen_order_dict[var] + 1
         if scen_order_dict[var] < 2:
             n_row = 1
         elif scen_order_dict[var] < 4:
