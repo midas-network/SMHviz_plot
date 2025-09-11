@@ -898,8 +898,6 @@ def make_heatmap_plot(df, show_legend=True, subplot=False, subplot_col=None, sub
 
 def add_box_plot(df_var, fig, x_col="model_name", y_col="type_id", box_value=None, color_dict=None,
                  box_orientation="h", show_legend=False, plot_coord=None):
-    if plot_coord is None:
-        plot_coord = [1, 1]
     if box_value is None:
         box_value = [0.01, 0.25, 0.5, 0.75, 0.99]
     for x_val in df_var[x_col].unique():
@@ -908,17 +906,31 @@ def add_box_plot(df_var, fig, x_col="model_name", y_col="type_id", box_value=Non
             color_x_val = "black"
         else:
             color_x_val = color_dict[x_val]
-        fig = fig.add_trace(go.Box(
-            orientation=box_orientation,
-            y=df_plot[x_col].astype(str),
-            lowerfence=df_plot[df_plot[y_col] == box_value[0]]["value"],
-            q1=df_plot[df_plot[y_col] == box_value[1]]["value"],
-            median=df_plot[df_plot[y_col] == box_value[2]]["value"],
-            q3=df_plot[df_plot[y_col] == box_value[3]]["value"],
-            upperfence=df_plot[df_plot[y_col] == box_value[4]]["value"],
-            marker_color=color_x_val,
-            name=x_val, showlegend=show_legend),
-            row=plot_coord[0], col=plot_coord[1])
+        if plot_coord is None:
+            fig = fig.add_trace(go.Box(
+                orientation=box_orientation,
+                y=df_plot[x_col].astype(str),
+                lowerfence=df_plot[df_plot[y_col] == box_value[0]]["value"],
+                q1=df_plot[df_plot[y_col] == box_value[1]]["value"],
+                median=df_plot[df_plot[y_col] == box_value[2]]["value"],
+                q3=df_plot[df_plot[y_col] == box_value[3]]["value"],
+                upperfence=df_plot[df_plot[y_col] == box_value[4]]["value"],
+                marker_color=color_x_val,
+                name=x_val, showlegend=show_legend))
+        else:
+            fig = fig.add_trace(go.Box(
+                orientation=box_orientation,
+                y=df_plot[x_col].astype(str),
+                lowerfence=df_plot[df_plot[y_col] == box_value[0]]["value"],
+                q1=df_plot[df_plot[y_col] == box_value[1]]["value"],
+                median=df_plot[df_plot[y_col] == box_value[2]]["value"],
+                q3=df_plot[df_plot[y_col] == box_value[3]]["value"],
+                upperfence=df_plot[df_plot[y_col] == box_value[4]]["value"],
+                marker_color=color_x_val,
+                name=x_val, showlegend=show_legend),
+                row=plot_coord[0], col=plot_coord[1])
+
+
     return fig
 
 
@@ -942,7 +954,7 @@ def make_boxplot_plot(df, show_legend=False, subplot=False, subplot_col=None, su
     else:
         fig = go.Figure()
         fig = add_box_plot(df, fig, x_col=x_col, y_col=y_col, box_value=box_value, color_dict=color_dict,
-                           box_orientation=box_orientation, show_legend=show_legend, plot_coord=[1, 1])
+                           box_orientation=box_orientation, show_legend=show_legend, plot_coord = None)
 
     fig.update_layout(
         title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5, yref="paper"),
