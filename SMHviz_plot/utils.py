@@ -67,7 +67,7 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     return fig
 
 
-def subplot_row_col(sub_var, var, orientation=None):
+def subplot_row_col(sub_var, var, orientation=None, row_num=None):
     """ Returns row and column information
 
     For a subplots Figure, returns the associated row and column information for a specific value for an object
@@ -81,8 +81,17 @@ def subplot_row_col(sub_var, var, orientation=None):
     :type var: str | float | int
     :parameter orientation: string to indicate the subplots are either in 1 column ("v") or 1 row ("h")
     :type orientation: str
+    :parameter row_num: If `row_num` is not None, force a number of rows in the output subplots; the number of column
+        is automatically calculated with the length of `sub_var` parameter (`round((len(sub_var) / row_num) + 0.4)`)
+    :type row_num: int
     :return: a list with 2 values: [row number, column number] in the subplots
     """
+    if row_num is not None:
+        n_col = round((len(sub_var) / row_num) + 0.4)
+        if row_num == 1:
+            orientation = "h"
+        if n_col == 1:
+            orientation = "v"
     if orientation is None:
         scen_order_dict = dict(zip(sub_var, list(range(len(sub_var)))))
         if scen_order_dict[var] < 2:
@@ -96,6 +105,7 @@ def subplot_row_col(sub_var, var, orientation=None):
         else:
             n_col = 2
     else:
+        sub_var = list(sub_var)
         if orientation == "h":
             n_col = sub_var.index(var) + 1
             n_row = 1

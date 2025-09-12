@@ -354,7 +354,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                       hover_text="", ensemble_name=None, ensemble_color=None, ensemble_view=False, line_width=2,
                       connect_gaps=True, color_dict=None, opacity=0.1, palette="turbo", title="", subtitle="",
                       height=1000, theme="plotly_white", notes=None, button=True, button_opt="all", v_lines=None,
-                      h_lines=None, zoom_in_projection=None, specs=None, w_delay=None):
+                      h_lines=None, zoom_in_projection=None, specs=None, row_num=None, w_delay=None):
     """Create a Scatter Plot
 
     Create one plot for model projection output files. The function allows multiple view: adding truth data, projection
@@ -498,6 +498,9 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     :parameter specs: Parameter `specs` as in the `plotly.subplots.make_subplots()` function. See
       plotly.subplots.make_subplots()` documentation for more details. Used only for plot with subplots.
     :type specs: list | None
+    :parameter row_num: To specify a specific number of row in the subplot, if None, will be plotted
+    on a 2 columns grid.
+    :type row_num: int | None
     :parameter w_delay: For the truth data scatter plot, indicate a ending number of weeks to print in mode "markers"
       only . For example, if set to `4`, the last 4 weeks of the time series will be plotted in "markers" mode.
     :type w_delay: int | None
@@ -508,7 +511,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     if subplot_var is not None:
         sub_var = proj_data[subplot_var].unique()
         fig_plot = prep_subplot(sub_var, subplot_title, x_title, y_title, share_y=share_y, share_x=share_x,
-                                sort=False, specs=specs)
+                                sort=False, specs=specs, row_num=row_num)
     else:
         sub_var = None
         fig_plot = go.Figure()
@@ -534,7 +537,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                     truth_facet = truth_data
             else:
                 truth_facet = None
-            subplot_coord = subplot_row_col(sub_var, var)
+            subplot_coord = subplot_row_col(sub_var, var, row_num=row_num)
             if var == sub_var[0]:
                 show_legend = True
             else:
