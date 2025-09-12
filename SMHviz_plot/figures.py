@@ -1106,7 +1106,6 @@ def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_le
         for var in sub_var:
             df_var = df[df[subplot_col] == var].drop(subplot_col, axis=1)
             plot_coord = subplot_row_col(sub_var, var, row_num=row_num)
-            print(plot_coord)
             if var == sub_var[0]:
                 show_legend = show_legend
             else:
