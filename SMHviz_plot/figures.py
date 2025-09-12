@@ -1094,17 +1094,19 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
 def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_legend=True, hover_text="", opacity=0.3,
                         subplot=False, title="", height=1000, subplot_col=None, subplot_titles=None, palette="turbo",
                         share_x="all", share_y="all", x_title="", y_title="N", theme="plotly_white", color_dict=None,
-                        add_median=False, legend_dict=None):
+                        add_median=False, legend_dict=None, row_num=None):
     # Colorscale
     if color_dict is None:
         color_dict = make_palette_sequential(df, legend_col, palette=palette)
     # Plot
     if subplot is True:
         sub_var = list(df[subplot_col].unique())
-        fig = prep_subplot(sub_var, subplot_titles, x_title, y_title, sort=False, share_x=share_x, share_y=share_y)
+        fig = prep_subplot(sub_var, subplot_titles, x_title, y_title, sort=False, share_x=share_x,
+                           share_y=share_y, row_num=row_num)
         for var in sub_var:
             df_var = df[df[subplot_col] == var].drop(subplot_col, axis=1)
-            plot_coord = subplot_row_col(sub_var, var)
+            plot_coord = subplot_row_col(sub_var, var, row_num=row_num)
+            print(plot_coord)
             if var == sub_var[0]:
                 show_legend = show_legend
             else:
