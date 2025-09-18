@@ -77,9 +77,9 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     return fig
 
 
-def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y_col_min="min", width=7,
-                  mode="lines", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
-                  hover_text=""):
+def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y_col_min="min",
+                  width=7, mode="lines", color="rgb(110, 110, 110)", show_legend=True,
+                  subplot_coord=None, hover_text=""):
     """ Add scatter trace to a Figure
 
     Add scatter trace on Figure object. By default, the hover text will be:
