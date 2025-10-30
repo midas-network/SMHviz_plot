@@ -77,9 +77,9 @@ def add_scatter_trace(fig, data, legend_name, x_col="time_value", y_col="value",
     return fig
 
 
-def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y_col_min="min", width=7,
-                  mode="lines", color="rgb(110, 110, 110)", show_legend=True, subplot_coord=None,
-                  hover_text=""):
+def add_bar_trace(fig, data, legend_name, x_col="time_value", y_col_max="max", y_col_min="min",
+                  width=7, mode="lines", color="rgb(110, 110, 110)", show_legend=True,
+                  subplot_coord=None, hover_text=""):
     """ Add scatter trace to a Figure
 
     Add scatter trace on Figure object. By default, the hover text will be:
@@ -354,7 +354,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                       hover_text="", ensemble_name=None, ensemble_color=None, ensemble_view=False, line_width=2,
                       connect_gaps=True, color_dict=None, opacity=0.1, palette="turbo", title="", subtitle="",
                       height=1000, theme="plotly_white", notes=None, button=True, button_opt="all", v_lines=None,
-                      h_lines=None, zoom_in_projection=None, specs=None, w_delay=None):
+                      h_lines=None, zoom_in_projection=None, specs=None, row_num=None, w_delay=None):
     """Create a Scatter Plot
 
     Create one plot for model projection output files. The function allows multiple view: adding truth data, projection
@@ -498,6 +498,9 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     :parameter specs: Parameter `specs` as in the `plotly.subplots.make_subplots()` function. See
       plotly.subplots.make_subplots()` documentation for more details. Used only for plot with subplots.
     :type specs: list | None
+    :parameter row_num: To specify a specific number of row in the subplot, if None, will be plotted
+    on a 2 columns grid.
+    :type row_num: int | None
     :parameter w_delay: For the truth data scatter plot, indicate a ending number of weeks to print in mode "markers"
       only . For example, if set to `4`, the last 4 weeks of the time series will be plotted in "markers" mode.
     :type w_delay: int | None
@@ -508,7 +511,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     if subplot_var is not None:
         sub_var = proj_data[subplot_var].unique()
         fig_plot = prep_subplot(sub_var, subplot_title, x_title, y_title, share_y=share_y, share_x=share_x,
-                                sort=False, specs=specs)
+                                sort=False, specs=specs, row_num=row_num)
     else:
         sub_var = None
         fig_plot = go.Figure()
@@ -534,7 +537,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                     truth_facet = truth_data
             else:
                 truth_facet = None
-            subplot_coord = subplot_row_col(sub_var, var)
+            subplot_coord = subplot_row_col(sub_var, var, row_num=row_num)
             if var == sub_var[0]:
                 show_legend = True
             else:
@@ -898,8 +901,6 @@ def make_heatmap_plot(df, show_legend=True, subplot=False, subplot_col=None, sub
 
 def add_box_plot(df_var, fig, x_col="model_name", y_col="type_id", box_value=None, color_dict=None,
                  box_orientation="h", show_legend=False, plot_coord=None):
-    if plot_coord is None:
-        plot_coord = [1, 1]
     if box_value is None:
         box_value = [0.01, 0.25, 0.5, 0.75, 0.99]
     for x_val in df_var[x_col].unique():
@@ -908,17 +909,31 @@ def add_box_plot(df_var, fig, x_col="model_name", y_col="type_id", box_value=Non
             color_x_val = "black"
         else:
             color_x_val = color_dict[x_val]
-        fig = fig.add_trace(go.Box(
-            orientation=box_orientation,
-            y=df_plot[x_col].astype(str),
-            lowerfence=df_plot[df_plot[y_col] == box_value[0]]["value"],
-            q1=df_plot[df_plot[y_col] == box_value[1]]["value"],
-            median=df_plot[df_plot[y_col] == box_value[2]]["value"],
-            q3=df_plot[df_plot[y_col] == box_value[3]]["value"],
-            upperfence=df_plot[df_plot[y_col] == box_value[4]]["value"],
-            marker_color=color_x_val,
-            name=x_val, showlegend=show_legend),
-            row=plot_coord[0], col=plot_coord[1])
+        if plot_coord is None:
+            fig = fig.add_trace(go.Box(
+                orientation=box_orientation,
+                y=df_plot[x_col].astype(str),
+                lowerfence=df_plot[df_plot[y_col] == box_value[0]]["value"],
+                q1=df_plot[df_plot[y_col] == box_value[1]]["value"],
+                median=df_plot[df_plot[y_col] == box_value[2]]["value"],
+                q3=df_plot[df_plot[y_col] == box_value[3]]["value"],
+                upperfence=df_plot[df_plot[y_col] == box_value[4]]["value"],
+                marker_color=color_x_val,
+                name=x_val, showlegend=show_legend))
+        else:
+            fig = fig.add_trace(go.Box(
+                orientation=box_orientation,
+                y=df_plot[x_col].astype(str),
+                lowerfence=df_plot[df_plot[y_col] == box_value[0]]["value"],
+                q1=df_plot[df_plot[y_col] == box_value[1]]["value"],
+                median=df_plot[df_plot[y_col] == box_value[2]]["value"],
+                q3=df_plot[df_plot[y_col] == box_value[3]]["value"],
+                upperfence=df_plot[df_plot[y_col] == box_value[4]]["value"],
+                marker_color=color_x_val,
+                name=x_val, showlegend=show_legend),
+                row=plot_coord[0], col=plot_coord[1])
+
+
     return fig
 
 
@@ -942,7 +957,7 @@ def make_boxplot_plot(df, show_legend=False, subplot=False, subplot_col=None, su
     else:
         fig = go.Figure()
         fig = add_box_plot(df, fig, x_col=x_col, y_col=y_col, box_value=box_value, color_dict=color_dict,
-                           box_orientation=box_orientation, show_legend=show_legend, plot_coord=[1, 1])
+                           box_orientation=box_orientation, show_legend=show_legend, plot_coord = None)
 
     fig.update_layout(
         title=dict(text=title, font=dict(size=18), xanchor="center", xref="paper", x=0.5, yref="paper"),
@@ -1079,17 +1094,18 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
 def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_legend=True, hover_text="", opacity=0.3,
                         subplot=False, title="", height=1000, subplot_col=None, subplot_titles=None, palette="turbo",
                         share_x="all", share_y="all", x_title="", y_title="N", theme="plotly_white", color_dict=None,
-                        add_median=False, legend_dict=None):
+                        add_median=False, legend_dict=None, row_num=None):
     # Colorscale
     if color_dict is None:
         color_dict = make_palette_sequential(df, legend_col, palette=palette)
     # Plot
     if subplot is True:
         sub_var = list(df[subplot_col].unique())
-        fig = prep_subplot(sub_var, subplot_titles, x_title, y_title, sort=False, share_x=share_x, share_y=share_y)
+        fig = prep_subplot(sub_var, subplot_titles, x_title, y_title, sort=False, share_x=share_x,
+                           share_y=share_y, row_num=row_num)
         for var in sub_var:
             df_var = df[df[subplot_col] == var].drop(subplot_col, axis=1)
-            plot_coord = subplot_row_col(sub_var, var)
+            plot_coord = subplot_row_col(sub_var, var, row_num=row_num)
             if var == sub_var[0]:
                 show_legend = show_legend
             else:
