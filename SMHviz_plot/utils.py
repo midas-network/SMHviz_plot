@@ -67,7 +67,7 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     return fig
 
 
-def subplot_row_col(sub_var, var, orientation=None, row_num=None):
+def subplot_row_col(sub_var, var, orientation=None, row_num=None, specs=None):
     """ Returns row and column information
 
     For a subplots Figure, returns the associated row and column information for a specific value for an object
@@ -84,6 +84,9 @@ def subplot_row_col(sub_var, var, orientation=None, row_num=None):
     :parameter row_num: If `row_num` is not None, force a number of rows in the output subplots; the number of column
         is automatically calculated with the length of `sub_var` parameter (`round((len(sub_var) / row_num) + 0.4)`)
     :type row_num: int
+    :parameter specs: Parameter `specs` as in the `plotly.subplots.make_subplots()` function. See
+      plotly.subplots.make_subplots()` documentation for more details. Used only for plot with subplots.
+    :type specs: list | None
     :return: a list with 2 values: [row number, column number] in the subplots
     """
     if row_num is not None:
@@ -94,6 +97,9 @@ def subplot_row_col(sub_var, var, orientation=None, row_num=None):
             orientation = "v"
     if orientation is None:
         scen_order_dict = dict(zip(sub_var, list(range(len(sub_var)))))
+        if specs is not None:
+            if None in sum(specs, [])[:scen_order_dict[var] + 1]:
+                scen_order_dict[var] = scen_order_dict[var] + 1
         if scen_order_dict[var] < 2:
             n_row = 1
         elif scen_order_dict[var] < 4:

@@ -537,7 +537,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                     truth_facet = truth_data
             else:
                 truth_facet = None
-            subplot_coord = subplot_row_col(sub_var, var, row_num=row_num)
+            subplot_coord = subplot_row_col(sub_var, var, row_num=row_num, specs=specs)
             if var == sub_var[0]:
                 show_legend = True
             else:
