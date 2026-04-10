@@ -45,20 +45,23 @@ def prep_subplot(sub_var, sub_title, x_title, y_title, sort=True, font_size=14, 
     # Sort value
     if sort is True:
         sub_var.sort()
+    len_var = len(sub_var)
+    if specs is not None:
+        len_var = len(sum(specs, []))
     # Row and Columns information
     if row_num is None:
-        if len(sub_var) > 2:
+        if len_var > 2:
             col_num = 2
-            if len(sub_var) % 2 == 0:
-                row_num = len(sub_var) / 2
+            if len_var % 2 == 0:
+                row_num = len_var / 2
             else:
-                row_num = (len(sub_var) + 1) / 2
+                row_num = (len_var + 1) / 2
         else:
             row_num = 1
-            col_num = len(sub_var)
+            col_num = len_var
     else:
         row_num = row_num
-        col_num = round((len(sub_var) / row_num) + 0.4)
+        col_num = round((len_var / row_num) + 0.4)
     # Subplots
     fig = make_subplots(rows=int(row_num), cols=int(col_num), subplot_titles=sub_title, shared_yaxes=share_y,
                         shared_xaxes=share_x, vertical_spacing=subplot_spacing, horizontal_spacing=subplot_spacing,
