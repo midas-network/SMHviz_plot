@@ -389,24 +389,24 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     :parameter proj_data: Data frame containing the data to plot
     :type proj_data: pandas.DataFrame
     :parameter truth_data: Data frame containing the observed data to plot, set to None is no observed data plotted
-    :type truth_data: pandas.DataFrame
+    :type truth_data: pandas.DataFrame | None
     :parameter intervals: List of intervals to plot, by default `None`. If `None` ,it will be set to all possible
         values: `[0.95, 0.9, 0.8, 0.5]`
-    :type intervals: list
+    :type intervals: list | None
     :parameter intervals_dict: Dictionary to translate `intervals` value into associated quantiles value, if "None"
         (default), will use internal dictionary:
             - 0.95: [0.025, 0.975]
             - 0.9: [0.05, 0.95]
             - 0.8: [0.1, 0.9]
             - 0.5: [0.25, 0.75]
-    :type intervals_dict: dict
+    :type intervals_dict: dict | None
     :parameter x_col: Name of the column to use for x-axis, by default `target_end_date`
     :type x_col: str
     :parameter y_col: Name of the column to use for y-axis, by default `value`
     :type y_col: str
     :parameter point_value: To plot lines representing "median" (type_id = 0.5) or "point" value (type_id = NaN), "None"
         for no lines; by default "median".
-    :type point_value: str
+    :type point_value: str | None
     :parameter legend_col: Name of the column to use for different traces (one trace per value), by default `model_name`
     :type legend_col: str
     :parameter x_title: Title of the x-axis
