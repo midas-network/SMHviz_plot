@@ -216,7 +216,7 @@ def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_
                              name=legend_name,
                              mode='lines',
                              line=dict(width=line_width),
-                             marker=dict(color=re.sub(", 1\)", ", " + str(opacity) + ")", color)),
+                             marker=dict(color=re.sub(r", 1\)", ", " + str(opacity) + ")", color)),
                              legendgroup=legend_name,
                              showlegend=show_legend,
                              hovertemplate=second_hover_text),
@@ -228,10 +228,10 @@ def ui_ribbons(fig, df_plot, quant_sel, legend_name, x_col="target_end_date", y_
                    name=legend_name,
                    line=dict(width=line_width),
                    mode='lines',
-                   marker=dict(color=re.sub(", 1\)", ", " + str(opacity) + ")", color)),
+                   marker=dict(color=re.sub(r", 1\)", ", " + str(opacity) + ")", color)),
                    legendgroup=legend_name,
                    showlegend=False,
-                   fillcolor=re.sub(", 1\)", ", " + str(opacity) + ")", color),
+                   fillcolor=re.sub(r", 1\)", ", " + str(opacity) + ")", color),
                    fill='tonexty',
                    hovertemplate=first_hover_text),
         row=subplot_coord[0], col=subplot_coord[1])
@@ -335,7 +335,7 @@ def make_proj_plot(fig_plot, proj_data, intervals=None, intervals_dict=None, x_c
         elif len(intervals) > 1:
             intervals.sort(reverse=True)
             for i in range(0, len(intervals)):
-                if i is 0 and plot_df is None:
+                if i == 0 and plot_df is None:
                     ui_show_legend = show_legend
                 else:
                     ui_show_legend = False
@@ -543,7 +543,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
             else:
                 show_legend = False
             if truth_facet is not None:
-                if truth_data_type is "scatter":
+                if truth_data_type == "scatter":
                     if w_delay is not None:
                         plot_truth_df = truth_facet[pd.to_datetime(truth_facet[x_truth_col]) <=
                                                     (max(pd.to_datetime(truth_facet[x_truth_col])) -
@@ -563,7 +563,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                                                      subplot_coord=subplot_coord, x_col=x_truth_col, y_col=y_truth_col,
                                                      width=line_width, connect_gaps=connect_gaps, mode="markers",
                                                      color="rgb(200, 200, 200)", line_width=0.5)
-                elif truth_data_type is "bar":
+                elif truth_data_type == "bar":
                     fig_plot = add_bar_trace(fig_plot, truth_facet, truth_legend_name, show_legend=show_legend,
                                              hover_text=truth_legend_name + "<br>", subplot_coord=subplot_coord,
                                              x_col=x_truth_col)
@@ -593,7 +593,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
     else:
         fig_plot = fig_plot
         if truth_data is not None:
-            if truth_data_type is "scatter":
+            if truth_data_type == "scatter":
                 if w_delay is not None:
                     plot_truth_df = truth_data[pd.to_datetime(truth_data[x_truth_col]) <=
                                                (max(pd.to_datetime(truth_data[x_truth_col])) -
@@ -611,7 +611,7 @@ def make_scatter_plot(proj_data, truth_data, intervals=None, intervals_dict=None
                                                  hover_text=truth_legend_name + "<br>", x_col=x_truth_col,
                                                  width=line_width, connect_gaps=connect_gaps, mode="markers",
                                                  color="rgb(200, 200, 200)", show_legend=False, line_width=0.5)
-            elif truth_data_type is "bar":
+            elif truth_data_type == "bar":
                 fig_plot = add_bar_trace(fig_plot, truth_data, truth_legend_name,
                                          hover_text=truth_legend_name + "<br>", x_col=x_truth_col)
             else:
@@ -756,7 +756,7 @@ def add_point_scatter(fig, df, ens_name, color_dict=None, multiply=1, symbol="ci
             full_model_name = "".join(list(model))
         # prerequisite
         color_marker = color_line_trace(color_dict, model, line_width=0)
-        color_marker = re.sub(", 1\)", ", " + str(opacity) + ")", color_marker[0])
+        color_marker = re.sub(r", 1\)", ", " + str(opacity) + ")", color_marker[0])
         model_marker = dict(size=20, color=color_marker, symbol=symbol)
         fig.add_trace(go.Scatter(x=df_model["full_x"],
                                  y=df_model["rel_change"] * multi,
@@ -1078,7 +1078,7 @@ def add_spaghetti_plot(fig, df, color_dict, legend_dict=None,
         all_traj_df.loc[pd.isna(all_traj_df['value']), 'type_id'] = np.nan
 
         # Add single trace
-        color = re.sub(", 1\)", ", " + str(opacity) + ")", col_line[0])
+        color = re.sub(r", 1\)", ", " + str(opacity) + ")", col_line[0])
         fig = add_scatter_trace(fig, all_traj_df, legend_name, x_col="target_end_date", mode="lines", color=color,
                                 show_legend=show_legend, subplot_coord=subplot_coord,
                                 custom_data=all_traj_df['type_id'],

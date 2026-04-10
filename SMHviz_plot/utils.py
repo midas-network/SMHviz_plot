@@ -343,7 +343,7 @@ def make_palette_sequential(df, legend_col, palette="turbo"):
     if len(df[legend_col].unique()) > 1:
         palette_list = px.colors.sample_colorscale(palette, len(df[legend_col].unique()))
         for i in range(0, len(palette_list)):
-            palette_list[i] = re.sub("\)", ", 1)", re.sub("rgb", "rgba", palette_list[i]))
+            palette_list[i] = re.sub(r"\)", ", 1)", re.sub("rgb", "rgba", palette_list[i]))
         color_dict = dict(zip(df[legend_col].unique(), palette_list))
     else:
         color_dict = dict(zip(df[legend_col].unique(), ["rgba(0, 0, 255, 1)"]))
