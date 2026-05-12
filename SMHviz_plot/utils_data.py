@@ -398,9 +398,11 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
             all_sample = all_sample.replace({"value": 0}, 0.00000001)
         all_sample["proportion_" + pathogen_name] = all_sample["value_" + pathogen_name] / all_sample["value"]
         all_sample = all_sample.round({"value": 5})
+        all_sample["tot_proportion"] = all_sample[[col for col in all_sample.columns if col.startswith('proportion_')]].sum(axis=1)
     # Calculate the quantiles for each "value" and "proportion" columns
     all_quantile = all_sample.groupby(["target_end_date"]).agg(f)
     all_quantile.columns = all_quantile.columns.get_level_values(0) + "-" + all_quantile.columns.get_level_values(1)
+    all_sample = all_sample[all_sample["tot_proportion"] > 0]
     detail_quantile = all_sample.groupby(["target_end_date"]).agg(f2)
     detail_quantile.columns = (detail_quantile.columns.get_level_values(0) + "-" +
                                detail_quantile.columns.get_level_values(1))
