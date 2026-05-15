@@ -310,7 +310,7 @@ def q8(x):
     return x.quantile(0.975)
 
 
-def med(x):
+def median(x):
     """Calculate the quantile 0.5 (or median)
 
     Calculate the quantile 0.5 (or median) on a specific pandas Series
@@ -334,16 +334,27 @@ def mean(x):
     return x.mean()
 
 
-def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
+def prep_multipat_plot_comb(pathogen_information, primary=None, calc_mean=False):
     """Process Data for Combined Multi-pathogen plot
 
     From a dictionary containing each DataFrame associated to a specific pathogen:
 
     - `"value"`: Sum of all the "value_" columns ("value_<pathogen>" set to NA for pathogen with empty DataFrame
       (not selected))
-    - Proportion of each pathogen `"proportion_<pathogen>" = "value_<pathogen>" / "value"`
-    - Calculate the median, 95%, 90%, 80%, and 50% quantiles for each "value" and "proportion" columns (and the mean
-      if `calc_mean` set to `True`)
+    - Proportion of each pathogen :
+        - If two pathogens calculate proportion for primary pathogen:
+            - primary pathogen: `"proportion_<primary_pathogen>" = "value_<primary_pathogen>" / "value"`
+        - If three pathogens calculate proportion for primary pathogen and secondary pathogen:
+            - primary pathogen: `"proportion_<primary_pathogen>" = "value_<primary_pathogen>" / "value"`
+            - primary + secondary pathogen: `"proportion__<primary_pathogen>_<secondary_pathogen>"` =
+                (`"value_<primary_pathogen>" + "value_<secondary_pathogen>"`) / `"value"`
+    - Calculate the median, and 50% quantiles for each "value" and "proportion" columns (and the mean
+      if `calc_mean` set to `True`) except:
+        - For proportion with two pathogens:
+            - secondary pathogen: `"proportion_<other_pathogen>_median"` = 1 - `"proportion_<primary_pathogen>_median"
+        - For proportion with three pathogens:
+            - last pathogen: `"proportion_<other_pathogen>_median"` =
+                `1 - "proportion_<primary_pathogen>_<secondary_pathogen>_median"`
 
     Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
     0.95, 0.975, respectively. The median and mean are noted as "med" and "mean", respectively.
@@ -358,6 +369,9 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
     :parameter pathogen_information: A dictionary containing multiple dictionary containing a DataFrame (result of
      sampling process, key: "dataframe") and named with the associated specific pathogen (keys).
     :type pathogen_information: dict
+    :parameter primary Name of the pathogen(s) to treat as "primary"/"secondary" for proportion calculation.
+    If `None` the first pathogen(s) in the `pathogen_information`
+    :type primary: None | list
     :parameter calc_mean: Boolean indicating if the mean should be calculated too (in addition to the other quantiles)
     :type calc_mean: bool
     :return: A dictionary with 2 objects: (1) "all":  median, 95%, 90%, 80%, and 50% quantiles for each "value" and
@@ -365,12 +379,12 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
      "proportion_<pathogen>-<quantile>" columns.
     """
     all_sample = pd.DataFrame()
-    f = {'value': [med, q1, q2, q3, q4, q5, q6, q7, q8]}
+    f = {'value': [median, q1, q2, q3, q4, q5, q6, q7, q8]}
     f2 = {}
     for patho in pathogen_information:
         # Preparation
         pathogen_name = patho.lower()
-        f.update({"value_" + pathogen_name: [med, q1, q2, q3, q4, q5, q6, q7, q8]})
+        f.update({"value_" + pathogen_name: [median, q1, q2, q3, q4, q5, q6, q7, q8]})
         # Merge all pathogen in one dataframe
         if len(all_sample) > 0:
             if len(pathogen_information[patho]["dataframe"]) > 0:
@@ -386,24 +400,55 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
             all_sample[col] = pd.NA
     # Calculate sum of all pathogen
     all_sample["value"] = all_sample[[col for col in all_sample.columns if col.startswith('value_')]].sum(axis=1)
-    # Calculate proportion of each pathogen
-    for patho in pathogen_information:
-        # Preparation
-        pathogen_name = patho.lower()
-        if calc_mean is True:
-            f2.update({"proportion_" + pathogen_name: [med, mean, q1, q2, q3, q4, q5, q6, q7, q8]})
-        else:
-            f2.update({"proportion_" + pathogen_name: [med, q1, q2, q3, q4, q5, q6, q7, q8]})
-        if (all_sample["value"] == 0).any():
-            all_sample = all_sample.replace({"value": 0}, 0.00000001)
-        all_sample["proportion_" + pathogen_name] = all_sample["value_" + pathogen_name] / all_sample["value"]
-        all_sample = all_sample.round({"value": 5})
-        all_sample["tot_proportion"] = all_sample[[col for col in all_sample.columns if col.startswith('proportion_')]].sum(axis=1)
-    # Calculate the quantiles for each "value" and "proportion" columns
+    # Calculate the quantiles for each "value" columns
     all_quantile = all_sample.groupby(["target_end_date"]).agg(f)
     all_quantile.columns = all_quantile.columns.get_level_values(0) + "-" + all_quantile.columns.get_level_values(1)
-    all_sample = all_sample[all_sample["tot_proportion"] > 0]
+    # Calculate proportion of each pathogen
+    ## Prep column selection
+    all_sample = all_sample.round({"value": 5})
+    list_patho = []
+    for patho in pathogen_information:
+        if len(pathogen_information[patho]["dataframe"]) > 0:
+            list_patho.append(patho)
+    if primary is None:
+        if len(list_patho) == 2:
+            primary = [list(pathogen_information.keys())[0]]
+        if len(list_patho) == 3:
+            primary = list(pathogen_information.keys())[:2]
+    else:
+        if len(list_patho) == 2 and len(primary) != 1:
+            raise ValueError("Primary should be of length 1")
+        if len(list_patho) == 2 and len(primary) != 2:
+            raise ValueError("Primary should be of length 2")
+    other = [list_patho[-1].lower()]
+    primary = [x.lower() for x in primary]
+    ## Calculate proportion
+    if (all_sample["value"] == 0).any():
+        all_sample = all_sample[all_sample["value"] > 0]
+    all_sample["proportion_" + primary[0]] = all_sample["value_" + primary[0]] / all_sample["value"]
+    if calc_mean is True:
+        f2.update({"proportion_" + primary[0]: [median, mean, q4, q5]})
+    else:
+        f2.update({"proportion_" + primary[0]: [median, q4, q5]})
+    if len(primary) > 1:
+        all_sample["proportion_" + primary[0] + "_" + primary[1]] = (
+                (all_sample["value_" + primary[0]] + all_sample["value_" + primary[1]]) /
+                all_sample["value"])
+        if calc_mean is True:
+            f2.update({"proportion_" + primary[0] + "_" + primary[1]: [median, mean]})
+        else:
+            f2.update({"proportion_" + primary[0] + "_" + primary[1]: [median]})
+    # Calculate the quantiles for each "proportion" columns
     detail_quantile = all_sample.groupby(["target_end_date"]).agg(f2)
     detail_quantile.columns = (detail_quantile.columns.get_level_values(0) + "-" +
                                detail_quantile.columns.get_level_values(1))
+    if len(primary) > 1:
+        detail_quantile["proportion_" + other[0] + "-median"] = (
+                1 - detail_quantile["proportion_" + primary[0] + "_" + primary[1] + "-median"])
+        detail_quantile["proportion_" + primary[1] + "-median"] = (
+                1 - detail_quantile["proportion_" + other[0] + "-median"] -
+                detail_quantile["proportion_" + primary[0] + "-median"])
+    else:
+        detail_quantile["proportion_" + other[0] + "-median"] = (
+                1 - detail_quantile["proportion_" + primary[0] + "-median"])
     return {"all": all_quantile, "detail": detail_quantile}
