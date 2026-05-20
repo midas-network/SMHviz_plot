@@ -418,10 +418,13 @@ def prep_multipat_plot_comb(pathogen_information, primary=None, calc_mean=False)
     else:
         if len(list_patho) == 2 and len(primary) != 1:
             raise ValueError("Primary should be of length 1")
-        if len(list_patho) == 2 and len(primary) != 2:
+        if len(list_patho) == 3 and len(primary) != 2:
             raise ValueError("Primary should be of length 2")
-    other = [list_patho[-1].lower()]
     primary = [x.lower() for x in primary]
+    other = []
+    for patho in list_patho:
+        if patho.lower() not in primary:
+            other.append(patho.lower())
     ## Calculate proportion
     if (all_sample["value"] == 0).any():
         all_sample = all_sample[all_sample["value"] > 0]
