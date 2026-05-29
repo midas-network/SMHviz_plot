@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 
 def calculate_rel_change(row):
@@ -359,7 +361,7 @@ def calc_value(pathogen_information, write_sample, write_quantiles):
      path and filename inputted
      :type write_sample: None | str
      :parameter write_quantiles: If not None, write the quantiles associated with the `"value"`
-      columns in a csv files to the path and filename inputted
+      columns in a csv or parquet files to the path and filename inputted
      :type write_quantiles: None | str
     """
     all_sample = pd.DataFrame()
@@ -387,9 +389,17 @@ def calc_value(pathogen_information, write_sample, write_quantiles):
     all_quantile = all_sample.groupby(["target_end_date"]).agg(f)
     all_quantile.columns = all_quantile.columns.get_level_values(0) + "-" + all_quantile.columns.get_level_values(1)
     if write_sample is not None:
-        all_sample.to_csv(write_sample)
+        if write_sample.endswith(".csv"):
+            all_sample.to_csv(write_sample)
+        else:
+            table = pa.Table.from_pandas(all_sample)
+            pq.write_table(table, write_sample, compression="GZIP", compression_level=9)
     if write_quantiles is not None:
-        all_quantile.to_csv(write_quantiles)
+        if write_quantiles.endswith(".csv"):
+            all_quantile.to_csv(write_quantiles)
+        else:
+            table = pa.Table.from_pandas(all_quantile)
+            pq.write_table(table, write_quantiles, compression="GZIP", compression_level=9)
     return all_quantile, all_sample
 
 
@@ -528,11 +538,11 @@ def prep_multipat_plot_comb(pathogen_information, primary=None, calc_mean=False,
     :parameter calc_prop: Boolean indicating if the proportion and associated quantiles are
     calculated
     :type calc_prop: bool
-    :parameter write_sample: If not None, write the associated samples in a csv files to the
+    :parameter write_sample: If not None, write the associated samples in a csv pr parquet files to the
     path and filename inputted
     :type write_sample: None | str
     :parameter write_quantiles: If not None, write the quantiles associated with the `"value"`
-     columns in a csv files to the path and filename inputted
+     columns in a csv  or parquet files to the path and filename inputted
     :type write_quantiles: None | str
     :parameter write_proportion: If not None, write the quantiles associated with the `"proportion"`
      columns in a csv files to the path and filename inputted
