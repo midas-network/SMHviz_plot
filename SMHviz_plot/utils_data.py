@@ -30,12 +30,14 @@ def zeroed_cum_data(df, max_week, scen, model, targ, calc_week):
                 "scenario_id": [scen],
                 "model_name": [model],
                 "target": [str(targ)],
-                "end_value": [float(df_model[df_model["horizon"] == int(max_week)]["value"])],
+                "end_value":
+                    [float(df_model[df_model["horizon"] == int(max_week)]["value"].iloc[0])],
                 "week": [int(0)]
             })
             df_end = pd.concat([df0, df_mod])
         else:
-            end_val = float(df_model[df_model["horizon"] == int(max_week)]["value"])
+            end_val = df_model[df_model["horizon"] == int(max_week)]["value"]
+            end_val = float(end_val.iloc[0])
             df0 = pd.DataFrame({
                 "scenario_id": [scen],
                 "model_name": [model],
@@ -52,7 +54,7 @@ def zeroed_cum_data(df, max_week, scen, model, targ, calc_week):
 def end_cum_value(df, max_week, scen, model, targ):
     df_model = df[df["model_name"] == model]
     if df_model.shape[0] > 0:
-        end_val = float(df_model[df_model["horizon"] == int(max_week)]["value"])
+        end_val = float(df_model[df_model["horizon"] == int(max_week)]["value"].iloc[0])
         df_end = pd.DataFrame({
             "scenario_id": [scen],
             "model_name": [model],
