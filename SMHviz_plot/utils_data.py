@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 
 def calculate_rel_change(row):
@@ -28,12 +30,14 @@ def zeroed_cum_data(df, max_week, scen, model, targ, calc_week):
                 "scenario_id": [scen],
                 "model_name": [model],
                 "target": [str(targ)],
-                "end_value": [float(df_model[df_model["horizon"] == int(max_week)]["value"])],
+                "end_value":
+                    [float(df_model[df_model["horizon"] == int(max_week)]["value"].iloc[0])],
                 "week": [int(0)]
             })
             df_end = pd.concat([df0, df_mod])
         else:
-            end_val = float(df_model[df_model["horizon"] == int(max_week)]["value"])
+            end_val = df_model[df_model["horizon"] == int(max_week)]["value"]
+            end_val = float(end_val.iloc[0])
             df0 = pd.DataFrame({
                 "scenario_id": [scen],
                 "model_name": [model],
@@ -50,7 +54,7 @@ def zeroed_cum_data(df, max_week, scen, model, targ, calc_week):
 def end_cum_value(df, max_week, scen, model, targ):
     df_model = df[df["model_name"] == model]
     if df_model.shape[0] > 0:
-        end_val = float(df_model[df_model["horizon"] == int(max_week)]["value"])
+        end_val = float(df_model[df_model["horizon"] == int(max_week)]["value"].iloc[0])
         df_end = pd.DataFrame({
             "scenario_id": [scen],
             "model_name": [model],
@@ -310,7 +314,7 @@ def q8(x):
     return x.quantile(0.975)
 
 
-def med(x):
+def median(x):
     """Calculate the quantile 0.5 (or median)
 
     Calculate the quantile 0.5 (or median) on a specific pandas Series
@@ -334,43 +338,40 @@ def mean(x):
     return x.mean()
 
 
-def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
-    """Process Data for Combined Multi-pathogen plot
+def calc_value(pathogen_information, write_sample, write_quantiles):
+    """Process Data for Combined Multi-pathogen plot (internal function_
 
-    From a dictionary containing each DataFrame associated to a specific pathogen:
+     From a dictionary containing each DataFrame associated to a specific pathogen:
 
-    - `"value"`: Sum of all the "value_" columns ("value_<pathogen>" set to NA for pathogen with empty DataFrame
-      (not selected))
-    - Proportion of each pathogen `"proportion_<pathogen>" = "value_<pathogen>" / "value"`
-    - Calculate the median, 95%, 90%, 80%, and 50% quantiles for each "value" and "proportion" columns (and the mean
-      if `calc_mean` set to `True`)
+     - `"value"`: Sum of all the "value_" columns ("value_<pathogen>" set to NA for pathogen with empty DataFrame
+       (not selected))
 
-    Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
-    0.95, 0.975, respectively. The median and mean are noted as "med" and "mean", respectively.
+     Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
+     0.95, 0.975, respectively. The median and mean are noted as "med" and "mean", respectively.
 
-    The input `pathogen_information` should be in a specific format:
+     The input `pathogen_information` should be in a specific format:
 
-    - `pathogen_information = {<pathogenA>: {"dataframe":<DataFrame>}, <pathogenB>: {"dataframe":<DataFrame>}, etc.}`
-    - `<DataFrame>` is a data frame in the output format of the `sample_df()` function with 3 columns:
-      "target_end_date", "sample_id_n" and "value_<pathogen>".
-    - For more information, please consult the `sample_df()` function documentation
+     - `pathogen_information = {<pathogenA>: {"dataframe":<DataFrame>}, <pathogenB>: {"dataframe":<DataFrame>}, etc.}`
+     - `<DataFrame>` is a data frame in the output format of the `sample_df()` function with 3 columns:
+       "target_end_date", "sample_id_n" and "value_<pathogen>".
+     - For more information, please consult the `sample_df()` function documentation
 
-    :parameter pathogen_information: A dictionary containing multiple dictionary containing a DataFrame (result of
-     sampling process, key: "dataframe") and named with the associated specific pathogen (keys).
-    :type pathogen_information: dict
-    :parameter calc_mean: Boolean indicating if the mean should be calculated too (in addition to the other quantiles)
-    :type calc_mean: bool
-    :return: A dictionary with 2 objects: (1) "all":  median, 95%, 90%, 80%, and 50% quantiles for each "value" and
-     "value_<pathogen>-<quantile>"columns and (2) "detail": median, 95%, 90%, 80%, and 50% quantiles for each
-     "proportion_<pathogen>-<quantile>" columns.
+     :parameter pathogen_information: A dictionary containing multiple dictionary containing a DataFrame (result of
+      sampling process, key: "dataframe") and named with the associated specific pathogen (keys).
+     :type pathogen_information: dict
+     :parameter write_sample: If not None, write the associated samples in a csv files to the
+     path and filename inputted
+     :type write_sample: None | str
+     :parameter write_quantiles: If not None, write the quantiles associated with the `"value"`
+      columns in a csv or parquet files to the path and filename inputted
+     :type write_quantiles: None | str
     """
     all_sample = pd.DataFrame()
-    f = {'value': [med, q1, q2, q3, q4, q5, q6, q7, q8]}
-    f2 = {}
+    f = {'value': [median, q1, q2, q3, q4, q5, q6, q7, q8]}
     for patho in pathogen_information:
         # Preparation
         pathogen_name = patho.lower()
-        f.update({"value_" + pathogen_name: [med, q1, q2, q3, q4, q5, q6, q7, q8]})
+        f.update({"value_" + pathogen_name: [median, q1, q2, q3, q4, q5, q6, q7, q8]})
         # Merge all pathogen in one dataframe
         if len(all_sample) > 0:
             if len(pathogen_information[patho]["dataframe"]) > 0:
@@ -386,19 +387,176 @@ def prep_multipat_plot_comb(pathogen_information, calc_mean=False):
             all_sample[col] = pd.NA
     # Calculate sum of all pathogen
     all_sample["value"] = all_sample[[col for col in all_sample.columns if col.startswith('value_')]].sum(axis=1)
-    # Calculate proportion of each pathogen
-    for patho in pathogen_information:
-        # Preparation
-        pathogen_name = patho.lower()
-        if calc_mean is True:
-            f2.update({"proportion_" + pathogen_name: [med, mean, q1, q2, q3, q4, q5, q6, q7, q8]})
-        else:
-            f2.update({"proportion_" + pathogen_name: [med, q1, q2, q3, q4, q5, q6, q7, q8]})
-        all_sample["proportion_" + pathogen_name] = all_sample["value_" + pathogen_name] / all_sample["value"]
-    # Calculate the quantiles for each "value" and "proportion" columns
+    # Calculate the quantiles for each "value" columns
     all_quantile = all_sample.groupby(["target_end_date"]).agg(f)
     all_quantile.columns = all_quantile.columns.get_level_values(0) + "-" + all_quantile.columns.get_level_values(1)
+    if write_sample is not None:
+        if write_sample.endswith(".csv"):
+            all_sample.to_csv(write_sample)
+        else:
+            table = pa.Table.from_pandas(all_sample)
+            pq.write_table(table, write_sample, compression="GZIP", compression_level=9)
+    if write_quantiles is not None:
+        if write_quantiles.endswith(".csv"):
+            all_quantile.to_csv(write_quantiles)
+        else:
+            table = pa.Table.from_pandas(all_quantile)
+            pq.write_table(table, write_quantiles, compression="GZIP", compression_level=9)
+    return all_quantile, all_sample
+
+
+def calc_proportion(all_sample, primary=None,
+                    calc_mean=False,  write_proportion=None):
+    """Process Data for Combined Multi-pathogen plot (internal function)
+
+    From a DataFrame containing samples for specific pathogens:
+
+    - Proportion of each pathogen :
+        - If two pathogens calculate proportion for primary pathogen:
+            - primary pathogen: `"proportion_<primary_pathogen>" = "value_<primary_pathogen>" / "value"`
+        - If three pathogens calculate proportion for primary pathogen and secondary pathogen:
+            - primary pathogen: `"proportion_<primary_pathogen>" = "value_<primary_pathogen>" / "value"`
+            - primary + secondary pathogen: `"proportion__<primary_pathogen>_<secondary_pathogen>"` =
+                (`"value_<primary_pathogen>" + "value_<secondary_pathogen>"`) / `"value"`
+    - Calculate the median, and 50% quantiles for each "value" and "proportion" columns (and the mean
+      if `calc_mean` set to `True`) except:
+        - For proportion with two pathogens:
+            - secondary pathogen: `"proportion_<other_pathogen>_median"` = 1 - `"proportion_<primary_pathogen>_median"
+        - For proportion with three pathogens:
+            - last pathogen: `"proportion_<other_pathogen>_median"` =
+                `1 - "proportion_<primary_pathogen>_<secondary_pathogen>_median"`
+
+    Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
+    0.95, 0.975, respectively. The median and mean are noted as "med" and "mean", respectively.
+    :parameter all_sample: A DataFrame containing the second result of `calc_value` function (
+     sampling process output)
+    :type all_sample: pd.DataFrame
+    :parameter primary Name of the pathogen(s) to treat as "primary"/"secondary" for proportion calculation.
+    If `None` the first pathogen(s) in the `pathogen_information`
+    :type primary: None | list
+    :parameter calc_mean: Boolean indicating if the mean should be calculated too (in addition to the other quantiles)
+    :type calc_mean: bool
+    :parameter write_proportion: If not None, write the quantiles associated with the `"proportion"`
+     columns in a csv files to the path and filename inputted
+    :type write_proportion: None | str
+    """
+    # Calculate proportion of each pathogen
+    f2 = {}
+    ## Prep column selection
+    all_sample = all_sample.round({"value": 5})
+    all_sample = all_sample.dropna(axis=1, how='all')
+    list_patho = list(all_sample.filter(regex='^value_').columns)
+    list_patho = [s.replace('value_', '') for s in list_patho]
+    if primary is None:
+        if len(list_patho) == 2:
+            primary = list_patho[0]
+        if len(list_patho) == 3:
+            primary = list_patho[:2]
+    else:
+        if len(list_patho) == 2 and len(primary) != 1:
+            raise ValueError("Primary should be of length 1")
+        if len(list_patho) == 3 and len(primary) != 2:
+            raise ValueError("Primary should be of length 2")
+    other = []
+    for patho in list_patho:
+        if patho.lower() not in primary:
+            other.append(patho.lower())
+    ## Calculate proportion
+    if (all_sample["value"] == 0).any():
+        all_sample = all_sample[all_sample["value"] > 0]
+    all_sample["proportion_" + primary[0]] = all_sample["value_" + primary[0]] / all_sample["value"]
+    if calc_mean is True:
+        f2.update({"proportion_" + primary[0]: [median, mean, q4, q5]})
+    else:
+        f2.update({"proportion_" + primary[0]: [median, q4, q5]})
+    if len(primary) > 1:
+        all_sample["proportion_" + primary[0] + "_" + primary[1]] = (
+                (all_sample["value_" + primary[0]] + all_sample["value_" + primary[1]]) /
+                all_sample["value"])
+        if calc_mean:
+            f2.update({"proportion_" + primary[0] + "_" + primary[1]: [median, mean]})
+        else:
+            f2.update({"proportion_" + primary[0] + "_" + primary[1]: [median]})
+    # Calculate the quantiles for each "proportion" columns
     detail_quantile = all_sample.groupby(["target_end_date"]).agg(f2)
     detail_quantile.columns = (detail_quantile.columns.get_level_values(0) + "-" +
                                detail_quantile.columns.get_level_values(1))
+    if len(primary) > 1:
+        detail_quantile["proportion_" + other[0] + "-median"] = (
+                1 - detail_quantile["proportion_" + primary[0] + "_" + primary[1] + "-median"])
+        detail_quantile["proportion_" + primary[1] + "-median"] = (
+                1 - detail_quantile["proportion_" + other[0] + "-median"] -
+                detail_quantile["proportion_" + primary[0] + "-median"])
+    else:
+        detail_quantile["proportion_" + other[0] + "-median"] = (
+                1 - detail_quantile["proportion_" + primary[0] + "-median"])
+    if write_proportion is not None:
+        detail_quantile.to_csv(write_proportion)
+    return detail_quantile
+
+
+def prep_multipat_plot_comb(pathogen_information, primary=None, calc_mean=False,
+                            calc_prop=True, write_sample=None, write_quantiles=None,
+                            write_proportion=None):
+    """Process Data for Combined Multi-pathogen plot
+
+    From a dictionary containing each DataFrame associated to a specific pathogen:
+
+    - `"value"`: Sum of all the "value_" columns ("value_<pathogen>" set to NA for pathogen with empty DataFrame
+      (not selected))
+    - Proportion of each pathogen :
+        - If two pathogens calculate proportion for primary pathogen:
+            - primary pathogen: `"proportion_<primary_pathogen>" = "value_<primary_pathogen>" / "value"`
+        - If three pathogens calculate proportion for primary pathogen and secondary pathogen:
+            - primary pathogen: `"proportion_<primary_pathogen>" = "value_<primary_pathogen>" / "value"`
+            - primary + secondary pathogen: `"proportion__<primary_pathogen>_<secondary_pathogen>"` =
+                (`"value_<primary_pathogen>" + "value_<secondary_pathogen>"`) / `"value"`
+    - Calculate the median, and 50% quantiles for each "value" and "proportion" columns (and the mean
+      if `calc_mean` set to `True`) except:
+        - For proportion with two pathogens:
+            - secondary pathogen: `"proportion_<other_pathogen>_median"` = 1 - `"proportion_<primary_pathogen>_median"
+        - For proportion with three pathogens:
+            - last pathogen: `"proportion_<other_pathogen>_median"` =
+                `1 - "proportion_<primary_pathogen>_<secondary_pathogen>_median"`
+
+    Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
+    0.95, 0.975, respectively. The median and mean are noted as "med" and "mean", respectively.
+
+    The input `pathogen_information` should be in a specific format:
+
+    - `pathogen_information = {<pathogenA>: {"dataframe":<DataFrame>}, <pathogenB>: {"dataframe":<DataFrame>}, etc.}`
+    - `<DataFrame>` is a data frame in the output format of the `sample_df()` function with 3 columns:
+      "target_end_date", "sample_id_n" and "value_<pathogen>".
+    - For more information, please consult the `sample_df()` function documentation
+
+    :parameter pathogen_information: A dictionary containing multiple dictionary containing a DataFrame (result of
+     sampling process, key: "dataframe") and named with the associated specific pathogen (keys).
+    :type pathogen_information: dict
+    :parameter primary Name of the pathogen(s) to treat as "primary"/"secondary" for proportion calculation.
+    If `None` the first pathogen(s) in the `pathogen_information`
+    :type primary: None | list
+    :parameter calc_mean: Boolean indicating if the mean should be calculated too (in addition to the other quantiles)
+    :type calc_mean: bool
+    :parameter calc_prop: Boolean indicating if the proportion and associated quantiles are
+    calculated
+    :type calc_prop: bool
+    :parameter write_sample: If not None, write the associated samples in a csv pr parquet files to the
+    path and filename inputted
+    :type write_sample: None | str
+    :parameter write_quantiles: If not None, write the quantiles associated with the `"value"`
+     columns in a csv  or parquet files to the path and filename inputted
+    :type write_quantiles: None | str
+    :parameter write_proportion: If not None, write the quantiles associated with the `"proportion"`
+     columns in a csv files to the path and filename inputted
+    :type write_proportion: None | str
+    :return: A dictionary with 2 objects: (1) "all":  median, 95%, 90%, 80%, and 50% quantiles for each "value" and
+     "value_<pathogen>-<quantile>"columns and (2) "detail": median, 95%, 90%, 80%, and 50% quantiles for each
+     "proportion_<pathogen>-<quantile>" columns.
+    """
+    all_quantile, all_sample = calc_value(pathogen_information, write_sample, write_quantiles)
+    if calc_prop:
+        detail_quantile = calc_proportion(all_sample, primary=primary,
+                                          calc_mean=calc_mean,  write_proportion=write_proportion)
+    else:
+        detail_quantile = None
     return {"all": all_quantile, "detail": detail_quantile}

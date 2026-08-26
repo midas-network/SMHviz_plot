@@ -1125,7 +1125,7 @@ def make_spaghetti_plot(df, legend_col="model_name", spag_col="type_id", show_le
 
 
 def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, opacity=0.2, color=None, palette="turbo",
-                                     intervals_dict=None, intervals=None, bar_interval=0.5, bar_calc="med", title=None,
+                                     intervals_dict=None, intervals=None, bar_interval=0.5, bar_calc="median", title=None,
                                      y_axis_title="", error_bar_pat=None):
     """Create the Multi-Pathogen Combined plot
 
@@ -1143,7 +1143,7 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     and 50% quantiles for each "value" and "value_<pathogen>-<quantile>"columns and
     (2) "detail": median, 95%, 90%, 80%, and 50% quantiles for each "proportion_<pathogen>-<quantile>" columns.
     Each quantile is noted as: q1, q2, q3, q4, q5, q6, q7, q8, corresponding to: 0.025, 0.05, 0.1, 0.25, 0.75, 0.9,
-    0.95, 0.975, respectively. The median and mean are noted as "med" and "mean", respectively.
+    0.95, 0.975, respectively. The median and mean are noted as "median" and "mean", respectively.
 
     :parameter list_df: A dictionary with 2 DataFrame: (1) "all":  median, 95%, 90%, 80%, and 50% quantiles for the
      combined ("value" column) and for each pathogen ("value_<pathogen>" columns) and (2) "detail": median, 95%, 90%,
@@ -1176,7 +1176,7 @@ def make_combine_multi_pathogen_plot(list_df, list_pathogen, truth_data=None, op
     :type intervals: list
     :parameter bar_interval: Interval to use for the error bar in the second subplot, by default `0.5`.
     :type bar_interval: float
-    :parameter bar_calc: Value to use for the bar height, should match columns names. By default, "med"
+    :parameter bar_calc: Value to use for the bar height, should match columns names. By default, "median"
     :type bar_calc: str
     :parameter title: Title of the plot, by default `None` (no title).
     :type title: str

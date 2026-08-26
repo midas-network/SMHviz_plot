@@ -16,7 +16,8 @@ dependencies = [
     "datetime",
     "numpy>=1.23.5",
     "pandas>=1.5.2",
-    "plotly>=5.9.0"
+    "plotly>=5.9.0",
+    "pyarrow"
 ]
 
 [tool.setuptools.packages.find]
